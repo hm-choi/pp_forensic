@@ -89,3 +89,12 @@ print("속도 위반 여부 (1인 경우 속도가 60보다 크다는 것을 의
 print(ho.decrypt(result2)[:12])
 print("TIME", END_TIME, "s")
  
+START_TIME = time.time()
+START = -3000.0
+END = 5.0
+result3 = hft.time_range(t_real_ctxt, START, END, 5000)
+END_TIME = time.time() - START_TIME
+
+print("시간 범위:", START, ",", END)
+print(ho.decrypt(result3)[:12])
+print("TIME", END_TIME, "s")

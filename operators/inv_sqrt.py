@@ -181,6 +181,13 @@ class HEStatistics:
             result_ctxt.append(tmp_ct)    
         return HEData(result_ctxt, x.size(), result_ctxt[0].level, x.scale())
 
+    def he_step(self, x:HEData):
+
+        signed = self.he_sign(x)
+        x = self._ho.mult_const(signed, 0.5)
+        return self._ho.add_const(x, 0.5)
+
+
     def inv_sqrt_without_bts(self, x:HEData, y:HEData, iteration:int=10):
         N = 2.0
     

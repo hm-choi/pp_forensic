@@ -15,7 +15,6 @@ engine = HEEngine(device_type="cpu",
     log_slots=15,
     warmup_bootstrap=True)
 
-test1 = [1.0 for _ in range(engine.num_slots())]
 hft = HEForensicTest(engine)
 ho = HEOperator(engine)
 

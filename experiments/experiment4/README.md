@@ -44,6 +44,14 @@ in directly.
 Rows with no number are given the prefix 999, which no real number uses, so they
 never match any target.
 
+`detect_phone_match(enc_segs, target_segs, denoms, margin=0.5)` - margin is the
+half-width of the accepted interval in integer units, so 0.5 matches exactly one
+integer.
+
+`detect_phone_exists(match_ctxt, max_count=32)` - max_count is the expected upper
+bound on the number of matches. It scales the he_step input into [-1,1], so it
+must stay above the actual match count.
+
 ## Results
 
 Eleven queries: the four numbers present in the log, one variant of each with the

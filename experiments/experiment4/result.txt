@@ -1,0 +1,27 @@
+Device: CPU
+Key directory: /root/heaan_setting/FGb/keys/
+Key 로드 완료
+Warm-up encrypt 시작 [CPU]
+Warm-up encrypt 완료
+Warm-up bootstrap 시작
+Warm-up bootstrap 완료
+
+HEAAN ENGINE LOAD SUCCESS [device=CPU]
+
+
+Niro call log: 204 rows   19 recorded numbers   4 distinct
+Number split (3, 4, 4)   normalization denominators (999, 9999, 9999)
+
+query number  description             exp  answer  plain  cipher   agreement      TIME
+--------------------------------------------------------------------------------------------
+01020132924   original                 1      1     12     12     32768/32768  109.64s 
+01020132925   last digit differs       0      0      0      0     32768/32768  102.52s 
+01065749080   original                 1      1      3      3     32768/32768  104.54s 
+01065749081   last digit differs       0      0      0      0     32768/32768   96.69s 
+01026731582   original                 1      1      2      2     32768/32768  102.74s 
+01026731583   last digit differs       0      0      0      0     32768/32768  101.20s 
+00687524858   original                 1      1      2      2     32768/32768   98.52s 
+00687524859   last digit differs       0      0      0      0     32768/32768  102.11s 
+02020132924   first group differs      0      0      0      0     32768/32768  100.24s 
+01020232924   middle group differs     0      0      0      0     32768/32768   95.82s 
+01011112222   not in log               0      0      0      0     32768/32768   95.04s 

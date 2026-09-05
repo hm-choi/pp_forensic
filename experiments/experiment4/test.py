@@ -24,13 +24,14 @@ car = pd.read_csv('../../datasets/niro_call.csv')
 #=========================#
 ##  3. Do Preprocessing  ##
 #=========================#
-# 전화번호는 정수로 저장되어 선행 0 이 소실되어 있다.
-# 국내 이동전화(01x)는 0 이 하나, 국제전화 식별번호(006)는 0 이 두 개 빠지므로
-# 자릿수 분기 없이 11자리로 zero-pad 하여 통일한다.
+# Phone numbers are stored as integers, so leading zeros are lost.
+# A domestic mobile number (01x) loses one zero and an international prefix (006)
+# loses two, so every value is zero-padded back to 11 digits instead of
+# branching on length.
 WIDTHS = (3, 4, 4)                           # 010 / 2013 / 2924
 DENOMS = tuple(10 ** w - 1 for w in WIDTHS)  # 999 / 9999 / 9999
 NDIGIT = sum(WIDTHS)
-UNOBSERVED_PREFIX = 999                      # 실제 번호에 없는 앞 3자리
+UNOBSERVED_PREFIX = 999                      # a 3-digit prefix no real number uses
 
 
 def split_phone(value):
@@ -43,7 +44,7 @@ def split_phone(value):
 
 
 def bump(num, i):
-    """num 의 i 번째 자리 하나만 다른 숫자로 바꾼다."""
+    """Return num with exactly one digit at position i replaced."""
     d = list(num)
     d[i] = str((int(d[i]) + 1) % 10)
     return ''.join(d)
@@ -51,8 +52,8 @@ def bump(num, i):
 
 raw = np.pad(car['상대번호'].to_numpy(), (0, SLOTS - len(car)), constant_values=-1)
 
-# 미관측(-1)은 앞 3자리를 999 로 밀어내 어떤 타겟과도 일치하지 않게 한다.
-# geofence 에서 미관측 좌표를 먼 지점으로 밀어낸 것과 같은 방식이다.
+# Rows with no number (-1) get the prefix 999 so they never match any target.
+# This mirrors how the geofence experiment pushes unrecorded coordinates far away.
 segs = np.zeros((len(WIDTHS), SLOTS))
 for idx, value in enumerate(raw):
     if value == -1:
@@ -66,26 +67,27 @@ enc_segs = [ho.encrypt(segs[k]) for k in range(len(WIDTHS))]
 #=========================================#
 ##  4. Build the query list               ##
 #=========================================#
-# 로그에 실제로 있는 번호를 뽑고, 각 번호마다 한 자리만 바꾼 변형을 함께 만든다.
+# Take every number that actually appears in the log, then derive variants that
+# differ in exactly one digit.
 obs  = pd.Series(raw[raw != -1])
-real = [str(int(v)).zfill(NDIGIT) for v in obs.value_counts().index]   # 등장 횟수 많은 순
+real = [str(int(v)).zfill(NDIGIT) for v in obs.value_counts().index]   # most frequent first
 
 QUERIES = []
 for num in real:
-    QUERIES.append((num, '원본', 1))
-    QUERIES.append((bump(num, 10), '끝자리 하나 다름', 0))
-for num in real[:1]:                         # 대표 번호 하나는 앞자리와 중간자리도 본다
-    QUERIES.append((bump(num, 1), '앞자리 하나 다름', 0))
-    QUERIES.append((bump(num, 5), '중간자리 하나 다름', 0))
-QUERIES.append(('01011112222', '로그에 없는 번호', 0))
+    QUERIES.append((num, 'original', 1))
+    QUERIES.append((bump(num, 10), 'last digit differs', 0))
+for num in real[:1]:                         # the most frequent number also gets first- and middle-group variants
+    QUERIES.append((bump(num, 1), 'first group differs', 0))
+    QUERIES.append((bump(num, 5), 'middle group differs', 0))
+QUERIES.append(('01011112222', 'not in log', 0))
 
 #=========================================#
 ##  5. Test the phone number match check  ##
 #=========================================#
-print(f"\n니로 통화 로그 {len(car)}행   상대번호 관측 {int((raw != -1).sum())}건   고유 번호 {len(real)}개")
-print(f"번호 분할 {WIDTHS}   정규화 분모 {DENOMS}")
-print("\n조회 번호      설명                 기대  최종답   평문  암호문      전수대조     TIME")
-print('-' * 90)
+print(f"\nNiro call log: {len(car)} rows   {int((raw != -1).sum())} recorded numbers   {len(real)} distinct")
+print(f"Number split {WIDTHS}   normalization denominators {DENOMS}")
+print("\nquery number  description             exp  answer  plain  cipher   agreement      TIME")
+print('-' * 92)
 
 wrong = 0
 for target, why, expect in QUERIES:
@@ -96,7 +98,7 @@ for target, why, expect in QUERIES:
     exists = hft.detect_phone_exists(match)
     el = time.time() - T
 
-    answer = int(round(float(ho.decrypt(exists)[0])))       # 최종 답 0 또는 1
+    answer = int(round(float(ho.decrypt(exists)[0])))       # final answer, 0 or 1
     out    = np.array(ho.decrypt(match))[:SLOTS]
     he_hit = (out > 0.5).astype(int)
     pl_hit = np.array([1 if v != -1 and split_phone(v) == tsegs else 0 for v in raw])
@@ -106,10 +108,4 @@ for target, why, expect in QUERIES:
     wrong += (not ok)
     mark = ' ' if ok else ' X'
 
-    print(f"{target:<14}{why:<20}{expect:>4}{answer:>7}{int(pl_hit.sum()):>7}"
-          f"{int(he_hit.sum()):>7}{agree:>10}/{SLOTS}{el:>8.2f}s{mark}")
-
-print('-' * 90)
-print(f"총 {len(QUERIES)}건 질의   기대와 다른 결과 {wrong}건")
-print("\n최종답 1 = 이 번호와 통화한 기록이 있다,  0 = 없다")
-print("한 자리만 달라도 0 이 나오는지 위 표의 '다름' 행에서 확인할 수 있다")
+    print(f"{target:<14}{why:<22}{expect:>4}{answer:>7}{int(pl_hit.sum()):>7}{int(he_hit.sum()):>7}{agree:>10}/{SLOTS}{el:>8.2f}s{mark}")

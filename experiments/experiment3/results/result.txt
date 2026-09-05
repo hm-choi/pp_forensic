@@ -1,0 +1,52 @@
+Device: CPU
+Key directory: /root/heaan_setting/FGb/keys/
+Key 로드 완료
+Warm-up encrypt 시작 [CPU]
+Warm-up encrypt 완료
+Warm-up bootstrap 시작
+Warm-up bootstrap 완료
+
+HEAAN ENGINE LOAD SUCCESS [device=CPU]
+
+
+==============================================================================
+[k5_kitkat]  file k5_kitkat_drive.csv   6820 of 6820 rows used   246 rows with coordinates
+         query center 37.31808, 127.12741
+==============================================================================
+  stat    radius     plain   cipher     agreement    gray   TIME
+  OK       0.5 km       13       13   32768/32768       0   16.50s
+  OK       1.0 km       52       52   32768/32768       0   14.53s
+  OK       5.0 km       58       58   32768/32768       0   14.10s
+  OK      10.0 km       72       72   32768/32768       0   16.98s
+  OK      50.0 km       92       92   32768/32768       0   14.10s
+  OK     100.0 km      110      110   32768/32768       0   14.21s
+
+==============================================================================
+[k5_jellybean]  file k5_jellybean_drive.csv   613 of 613 rows used   330 rows with coordinates
+         query center 37.86484, 127.05997
+==============================================================================
+  stat    radius     plain   cipher     agreement    gray   TIME
+  OK       0.5 km        4        4   32768/32768       0   14.30s
+  OK       1.0 km        5        5   32768/32768       0   14.24s
+  OK       5.0 km      254      254   32768/32768       0   12.97s
+  OK      10.0 km      258      258   32768/32768       0   13.56s
+  OK      50.0 km      330      330   32768/32768       0   14.32s
+  OK     100.0 km      330      330   32768/32768       0   14.17s
+
+==============================================================================
+SUMMARY   (plain = ground truth, cipher = homomorphic decision)
+==============================================================================
+  k5_kitkat         0.5km  plain     13  cipher     13   match
+  k5_kitkat         1.0km  plain     52  cipher     52   match
+  k5_kitkat         5.0km  plain     58  cipher     58   match
+  k5_kitkat        10.0km  plain     72  cipher     72   match
+  k5_kitkat        50.0km  plain     92  cipher     92   match
+  k5_kitkat       100.0km  plain    110  cipher    110   match
+  k5_jellybean      0.5km  plain      4  cipher      4   match
+  k5_jellybean      1.0km  plain      5  cipher      5   match
+  k5_jellybean      5.0km  plain    254  cipher    254   match
+  k5_jellybean     10.0km  plain    258  cipher    258   match
+  k5_jellybean     50.0km  plain    330  cipher    330   match
+  k5_jellybean    100.0km  plain    330  cipher    330   match
+
+  12 queries in total, 0 mismatched

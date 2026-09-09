@@ -7,7 +7,6 @@ from operators.operator import HEOperator
 from operators.forensic_operator import HEForensicTest
 import time
 
-
 #==========================#
 ##  1. Generate HEEngine  ##
 #==========================# 
@@ -21,79 +20,29 @@ ho = HEOperator(engine)
 #=======================#
 ##  2. Load Dataset    ##
 #=======================# 
-car_data = pd.read_csv('../../datasets/avante_accident.csv')
+car_data = pd.read_csv('../../datasets/sorento_drive.csv')
 slot_count = 32768
 
 #=========================#
 ##  3. Do Preprocessing  ##
 #=========================# 
-t_real = np.pad(
-    car_data['t_real'].to_numpy(),
-    (0, slot_count - len(car_data)),
-    constant_values=-1
-)
-speed = np.pad(
-    car_data['speed'].to_numpy(),
-    (0, slot_count - len(car_data)),
-    constant_values=0
-)
-rpm = np.pad(
-    car_data['rpm'].to_numpy(),
-    (0, slot_count - len(car_data)),
-    constant_values=-1
-)
-seatbelt_d = np.pad(
-    car_data['seatbelt_d'].to_numpy(),
-    (0, slot_count - len(car_data)),
-    constant_values=-1
-)
-seatbelt_p = np.pad(
-    car_data['seatbelt_p'].to_numpy(),
-    (0, slot_count - len(car_data)),
-    constant_values=-1
-)
-call = np.pad(
-    car_data['call'].to_numpy(),
-    (0, slot_count - len(car_data)),
-    constant_values=-1
-)
+raw_lon = car_data['기지국_경도_x1e5'][0:slot_count].to_numpy()
+lon = np.where(raw_lon == -1, 124.36*100000.0, raw_lon)
+raw_lat = car_data['기지국_위도_x1e5'][0:slot_count].to_numpy()
+lat = np.where(raw_lat == -1, 33.06*100000.0, raw_lat)
+
+lon = lon/100000.0
+lat = lat/100000.0
  
-#=====================#
-##  4. Encrypt Data  ##
-#=====================# 
-t_real_ctxt = ho.encrypt(t_real)
-speed_ctxt = ho.encrypt(speed)
-rpm_ctxt = ho.encrypt(rpm)
-seatbelt_d_ctxt = ho.encrypt(seatbelt_d)
-call_ctxt = ho.encrypt(call)
+enc_lon = ho.encrypt(lon)
+enc_lat = ho.encrypt(lat) 
 
-
-#=====================================================#
-##  5. Test the acceleration and deceleration test   ##
-#=====================================================#
+center_lon = 127.11443
+center_lat = 37.18897
+radius_km = 1.0
 START_TIME = time.time()
-result = hft.detect_speed_increase(speed_ctxt)
+result = hft.compute_geofence_score(enc_lat, enc_lon, center_lat, center_lon, radius_km)
 END_TIME = time.time() - START_TIME
-print("속도 증가 여부 (1인 경우 속도가 증가한 것을 의미)")
-print(ho.decrypt(result)[:12])
-print("TIME", END_TIME, "s")
-#===========================================#
-##  5. Test the Speeding violation check   ##
-#===========================================#
-START_TIME = time.time()
-THRESHOLD_TIME = 60.0
-result2 = hft.detect_overspeed(speed_ctxt, THRESHOLD_TIME)
-END_TIME = time.time() - START_TIME
-print("속도 위반 여부 (1인 경우 속도가 60보다 크다는 것을 의미)")
-print(ho.decrypt(result2)[:12])
-print("TIME", END_TIME, "s")
- 
-START_TIME = time.time()
-START = -3000.0
-END = 5.0
-result3 = hft.time_range(t_real_ctxt, START, END, 5000)
-END_TIME = time.time() - START_TIME
-
-print("시간 범위:", START, ",", END)
-print(ho.decrypt(result3)[:12])
+print("center에 반경", radius_km, "안에 차량이 존재한 경우 TEST")
+print(ho.decrypt(result)[:20])
 print("TIME", END_TIME, "s")

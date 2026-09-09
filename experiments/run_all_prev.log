@@ -1,0 +1,127 @@
+=== experiment1 start 12:16:44 ===
+Device: CPU
+Key directory: /root/heaan_setting/FGb/keys/
+Key 로드 완료
+Warm-up encrypt 시작 [CPU]
+Warm-up encrypt 완료
+Warm-up bootstrap 시작
+Warm-up bootstrap 완료
+
+HEAAN ENGINE LOAD SUCCESS [device=CPU]
+
+
+Sorento cell-tower log: 32768 of 154272 rows used, 20462 rows with cell coordinates
+Query center 37.18897 127.11443
+
+  stat    radius     plain   cipher     agreement   zero max      one min       one max        TIME     PLAIN TIME
+  OK       0.5 km     5784     5784   32768/32768   2.738e-09   0.9999999977   1.0000000029    14.32s      0.229ms
+  OK       1.0 km     5784     5784   32768/32768   3.491e-09   0.9999999978   1.0000000029    13.15s      0.200ms
+  OK       2.0 km     5784     5784   32768/32768   3.368e-09   0.9999999974   1.0000000018    13.38s      0.181ms
+  OK       3.0 km    12380    12380   32768/32768   2.973e-09   0.9999999976   1.0000000031    13.28s      0.167ms
+  OK       5.0 km    17370    17370   32768/32768   3.137e-09   0.9999999965   1.0000000019    13.16s      0.112ms
+  OK      10.0 km    19410    19410   32768/32768   2.961e-09   0.9999999971   1.0000000025    13.09s      0.129ms
+
+ 6 queries in total, 0 mismatched
+Saved: results/result2.txt, results/exp1_sorento_summary.csv
+=== experiment1 end 12:18:24 ===
+=== experiment2 start 12:18:24 ===
+Device: CPU
+Key directory: /root/heaan_setting/FGb/keys/
+Key 로드 완료
+Warm-up encrypt 시작 [CPU]
+Warm-up encrypt 완료
+Warm-up bootstrap 시작
+Warm-up bootstrap 완료
+
+HEAAN ENGINE LOAD SUCCESS [device=CPU]
+
+
+[k5_kitkat] 6820 of 6820 rows used, 246 rows with coordinates
+Query center 37.31808 127.12741
+
+  stat    radius     plain   cipher     agreement   zero max      one min       one max        TIME     PLAIN TIME
+  OK       0.2 km        3        3   32768/32768   2.994e-09   0.7869438066   1.0000000010    13.20s      0.132ms
+  OK       0.5 km       13       13   32768/32768   3.020e-09   0.9999999993   1.0000000006    14.12s      0.327ms
+  OK       1.0 km       52       52   32768/32768   3.194e-09   0.9999999985   1.0000000012    13.39s      0.144ms
+  OK       2.0 km       56       56   32768/32768   3.426e-09   0.9999999982   1.0000000011    12.63s      0.128ms
+  OK       3.0 km       58       58   32768/32768   2.510e-09   0.9999999986   1.0000000014    13.22s      0.137ms
+  OK       5.0 km       58       58   32768/32768   3.255e-09   0.9999999988   1.0000000017    13.39s      0.129ms
+
+[k5_jellybean] 613 of 613 rows used, 330 rows with coordinates
+Query center 37.86484 127.05997
+
+  stat    radius     plain   cipher     agreement   zero max      one min       one max        TIME     PLAIN TIME
+  OK       0.2 km        4        4   32768/32768   2.954e-09   0.9982863909   1.0000000009    12.64s      0.126ms
+  OK       0.5 km        4        4   32768/32768   3.488e-09   0.9999999999   1.0000000005    13.31s      0.133ms
+  OK       1.0 km        5        5   32768/32768   2.992e-09   0.9999999996   1.0000000006    13.47s      0.117ms
+  OK       2.0 km        5        5   32768/32768   2.722e-09   0.9999999995   1.0000000004    13.25s      0.114ms
+  OK       3.0 km       53       53   32768/32768   3.096e-09   0.9999999987   1.0000000012    13.52s      0.134ms
+  OK       5.0 km      254      254   32768/32768   2.958e-09   0.9999999982   1.0000000016    13.44s      0.118ms
+
+SUMMARY
+  k5_kitkat         0.2 km  plain      3  cipher      3   match   13.20s / 0.132ms
+  k5_kitkat         0.5 km  plain     13  cipher     13   match   14.12s / 0.327ms
+  k5_kitkat         1.0 km  plain     52  cipher     52   match   13.39s / 0.144ms
+  k5_kitkat         2.0 km  plain     56  cipher     56   match   12.63s / 0.128ms
+  k5_kitkat         3.0 km  plain     58  cipher     58   match   13.22s / 0.137ms
+  k5_kitkat         5.0 km  plain     58  cipher     58   match   13.39s / 0.129ms
+  k5_jellybean      0.2 km  plain      4  cipher      4   match   12.64s / 0.126ms
+  k5_jellybean      0.5 km  plain      4  cipher      4   match   13.31s / 0.133ms
+  k5_jellybean      1.0 km  plain      5  cipher      5   match   13.47s / 0.117ms
+  k5_jellybean      2.0 km  plain      5  cipher      5   match   13.25s / 0.114ms
+  k5_jellybean      3.0 km  plain     53  cipher     53   match   13.52s / 0.134ms
+  k5_jellybean      5.0 km  plain    254  cipher    254   match   13.44s / 0.118ms
+
+ 12 queries in total, 0 mismatched
+Saved: results/result2.txt, results/exp2_<dataset>_summary.csv, results/exp2_all_summary.csv
+=== experiment2 end 12:21:21 ===
+=== experiment3 start 12:21:21 ===
+Device: CPU
+Key directory: /root/heaan_setting/FGb/keys/
+Key 로드 완료
+Warm-up encrypt 시작 [CPU]
+Warm-up encrypt 완료
+Warm-up bootstrap 시작
+Warm-up bootstrap 완료
+
+HEAAN ENGINE LOAD SUCCESS [device=CPU]
+
+
+Niro call log: 204 rows   19 recorded numbers   4 distinct
+Number split (3, 4, 4)   normalization denominators (999, 9999, 9999)
+
+Per-row match and existence bit at C = 32
+query number  description             exp  answer   exist value    plain  cipher   agreement   zero max      one min        MATCH TIME  EXIST TIME  PLAIN TIME
+------------------------------------------------------------------------------------------------------------------------------------------------------
+bootstrapping!!
+bootstrapping!!
+bootstrapping!!
+01020132924   original                 1       1   1.0000000002     12     12     32768/32768   1.049e-09   0.9999996663     86.30s     13.42s     0.222ms
+bootstrapping!!
+bootstrapping!!
+bootstrapping!!
+01020132925   last digit differs       0       0   0.0000000007      0      0     32768/32768   1.268e-08     n/a       85.82s     13.02s     0.453ms
+bootstrapping!!
+bootstrapping!!
+bootstrapping!!
+01065749080   original                 1       1   0.9999999999      3      3     32768/32768   1.182e-09   0.9999996862     83.75s     12.92s     0.243ms
+bootstrapping!!
+bootstrapping!!
+bootstrapping!!
+01065749081   last digit differs       0       0  -0.0000000007      0      0     32768/32768   5.430e-09     n/a       84.90s     12.52s     0.293ms
+bootstrapping!!
+bootstrapping!!
+bootstrapping!!
+01026731582   original                 1       1   1.0000000009      2      2     32768/32768   1.417e-09   0.9999996786     77.55s     11.77s     0.129ms
+bootstrapping!!
+bootstrapping!!
+bootstrapping!!
+01026731583   last digit differs       0       0  -0.0000000004      0      0     32768/32768   1.342e-09     n/a       77.71s     12.02s     0.188ms
+bootstrapping!!
+bootstrapping!!
+bootstrapping!!
+00687524858   original                 1       1   1.0000000005      2      2     32768/32768   1.371e-09   0.9999996692     79.33s     12.28s     0.135ms
+bootstrapping!!
+bootstrapping!!
+bootstrapping!!
+00687524859   last digit differs       0       0   0.0000000011      0      0     32768/32768   2.263e-08     n/a       79.42s     11.86s     0.143ms

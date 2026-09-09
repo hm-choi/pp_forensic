@@ -1,93 +1,107 @@
-# Experiment 4 - Encrypted Phone Number Lookup
+# Experiment 4 - Vehicle Behaviour Predicates on EDR Data
 
 ## Dataset
 
-`datasets/niro_call.csv` - Bluetooth call history from a Kia Niro running an
-Android JellyBean infotainment platform. 204 rows, 16 columns.
+`datasets/avante_accident.csv` - Event Data Recorder (EDR) output from a Hyundai
+Avante CN7, covering the seconds around a collision. 16 rows, 6 columns. The file
+ends with two blank lines, so a line count reports 18.
 
 | Field | Rows with a value |
 |---|---|
-| Local timestamp and epoch milliseconds | 204 |
-| Bluetooth profile identifier | 185 |
-| Counterpart phone number | 19 |
-| Call direction and call state | 14 |
-| Paired device MAC address | 12 |
-| Handset and SIM identifiers (IMEI, ICCID) | 1 |
-| Coordinates | 1 latitude, no longitude |
+| Time relative to impact, in milliseconds (negative before the crash) | 16 |
+| Speed in km/h | 11 |
+| Engine RPM | 11 |
+| Driver and passenger seatbelt status | 1 each |
+| Call status | 0 |
 
-The 19 recorded numbers reduce to 4 distinct values, appearing 12, 3, 2 and 2
-times. One begins with 006, an international-dialling prefix, rather than a
-domestic 01x prefix. A value of -1 marks a field that was not recorded.
-
-Location queries are not possible on this log, since no row carries a complete
-coordinate pair.
+An EDR keeps no absolute clock, so time is expressed as an offset from the crash
+instead of a wall-clock timestamp. A value of -1 marks a field that was not
+recorded. Speed is recorded for the eleven rows up to impact and marked -1
+afterwards.
 
 ## Experiment
 
-Answer "is there any record of a call with this number?" without decrypting the
-call log. The output is a single 0 or 1, so how many calls took place, when they
-took place, and which record matched are never revealed.
+Three predicates are evaluated on ciphertexts. Only the 0/1 verdict is decrypted.
 
-`he_step` expects an input between -1 and 1, so an 11-digit number cannot be fed
-in directly.
+- Speed increase: rotate the ciphertext by one slot, subtract, read the sign with
+  `he_step`. Speed is normalized by a 200 km/h maximum so the input stays in the
+  -1 to 1 range that `he_step` expects.
+- Over-speed: subtract the normalized threshold and read the sign. The threshold
+  is a query parameter, not a constant in the code.
+- Time window: two `he_step` calls, one per bound, multiplied together.
 
-- Zero-pad each number to 11 digits, recovering the leading zeros lost by integer
-  storage.
-- Split into groups of 3, 4 and 4 digits and divide by 999, 9999 and 9999.
-- Per group, build a narrow interval indicator with two `he_step` calls, since
-  `he_step` reads only a sign and equality must be expressed as interval
-  membership.
-- Multiply the three group indicators, so all three must match to yield 1.
-- Sum every slot under encryption and apply `he_step` once more, reducing the
-  result to a single answer.
+Each predicate is also computed on plaintext and timed, as a check on the
+homomorphic result.
 
-Rows with no number are given the prefix 999, which no real number uses, so they
-never match any target.
+Two properties of the log decide what each predicate is evaluated on.
 
-`detect_phone_match(enc_segs, target_segs, denoms, margin=0.5)` - margin is the
-half-width of the accepted interval in integer units, so 0.5 matches exactly one
-integer.
+The speed predicates are scored on the eleven rows that carry a speed. Asking
+whether an unrecorded speed rose is not a question the log can answer, so the
+rows marked -1 are outside the query, in the same way that rows without a
+coordinate are outside a geofence query.
 
-`detect_phone_exists(match_ctxt, max_count=32)` - max_count is the expected upper
-bound on the number of matches. It scales the he_step input into [-1,1], so it
-must stay above the actual match count.
+The time window is `(-3000, -1000)` milliseconds, that is from three seconds
+before impact to one second before impact. Neither bound coincides with a
+recorded timestamp; a bound sitting exactly on a sample would ask whether a value
+is strictly less than itself, which is not a well-posed query. The bounds also
+place the padding value -1 outside the window, so every padded slot answers 0 and
+all 32,768 slots can be checked against the plaintext answer.
 
 ## Results
 
-Eleven queries: the four numbers present in the log, one variant of each with the
-last digit changed, two further variants of the most frequent number with a digit
-changed in the first and middle group, and one number that never appears.
+All three predicates agreed with the plaintext computation on every row scored.
 
-| Query | Description | Expected | Answer |
-|---|---|---|---|
-| 01020132924 | original | 1 | 1 |
-| 01020132925 | last digit differs | 0 | 0 |
-| 01065749080 | original | 1 | 1 |
-| 01065749081 | last digit differs | 0 | 0 |
-| 01026731582 | original | 1 | 1 |
-| 01026731583 | last digit differs | 0 | 0 |
-| 00687524858 | original | 1 | 1 |
-| 00687524859 | last digit differs | 0 | 0 |
-| 02020132924 | first group differs | 0 | 0 |
-| 01020232924 | middle group differs | 0 | 0 |
-| 01011112222 | not in log | 0 | 0 |
+| Predicate | Query | Scored | Plaintext | Ciphertext | Agreement | HE time | Plaintext time |
+|---|---|---|---|---|---|---|---|
+| Speed increase | consecutive rows | 11 rows | 10 | 10 | 11/11 | 15.78 s | 0.347 ms |
+| Over-speed | threshold 60 km/h | 11 rows | 4 | 4 | 11/11 | 13.19 s | 0.133 ms |
+| Time window | -3000 to -1000 ms | 32,768 slots | 4 | 4 | 32768/32768 | 27.06 s | 0.192 ms |
 
-All eleven matched expectation and agreed with the plaintext computation on every
-one of the 32,768 slots. Each query took 100 to 112 seconds.
+Per-row answers. A dot marks a row with no recorded speed, which the speed
+predicates do not cover.
 
-Dividing a 4-digit group by 9999 spaces adjacent values 0.0001 apart, while
-`he_step` resolves down to about 1.5e-8, so a single differing digit separates
-cleanly.
+| row | t_real | speed | incr | plain | over | plain | win | plain |
+|---|---|---|---|---|---|---|---|---|
+| 0 | -5020 | 42 | 1 | 1 | 0 | 0 | 0 | 0 |
+| 1 | -4520 | 46 | 1 | 1 | 0 | 0 | 0 | 0 |
+| 2 | -4020 | 50 | 1 | 1 | 0 | 0 | 0 | 0 |
+| 3 | -3520 | 53 | 1 | 1 | 0 | 0 | 0 | 0 |
+| 4 | -3020 | 56 | 1 | 1 | 0 | 0 | 0 | 0 |
+| 5 | -2520 | 59 | 1 | 1 | 0 | 0 | 1 | 1 |
+| 6 | -2020 | 61 | 1 | 1 | 1 | 1 | 1 | 1 |
+| 7 | -1520 | 64 | 1 | 1 | 1 | 1 | 1 | 1 |
+| 8 | -1020 | 66 | 1 | 1 | 1 | 1 | 1 | 1 |
+| 9 | -520 | 68 | 1 | 1 | 1 | 1 | 0 | 0 |
+| 10 | -20 | 5 | 0 | 0 | 0 | 0 | 0 | 0 |
+| 11 | -20 | -1 | . | . | . | . | 0 | 0 |
+| 12 | -3 | -1 | . | . | . | . | 0 | 0 |
+| 13 | 0 | -1 | . | . | . | . | 0 | 0 |
+| 14 | 5 | -1 | . | . | . | . | 0 | 0 |
+| 15 | 11 | -1 | . | . | . | . | 0 | 0 |
+
+The reconstruction the three predicates give is the expected one: the vehicle
+accelerates from 42 to 68 km/h over the five seconds before impact, exceeds
+60 km/h from 2.02 seconds before impact onward, and the queried window isolates
+rows 5 to 8.
+
+The time window costs roughly twice what the other two predicates cost, because
+it calls `he_step` once per bound and multiplies the two results. The cost of a
+predicate tracks the number of comparisons it contains.
 
 ## How to run
 
 ```bash
 export PYTHONPATH=/pp_forensic
 cd /pp_forensic/experiments/experiment4
-python3 -W ignore -u test.py 2>&1 | tee result.txt
+python3 -W ignore -u test2.py
 ```
+
+The script writes its own transcript, so no shell redirect is needed.
 
 ## Output
 
-`result.txt` holds the console output. The `plain` and `cipher` columns are a
-scoring aid, not part of the decision.
+| File | Contents |
+|---|---|
+| `results/result2.txt` | Console output |
+| `results/exp4_avante_summary.csv` | Per predicate: rows scored, plaintext count, ciphertext count, agreement, elapsed time for both |
+| `results/exp4_avante_rows.csv` | Per row: ciphertext and plaintext answer for each of the three predicates |

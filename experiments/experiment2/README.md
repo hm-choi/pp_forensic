@@ -1,87 +1,102 @@
-# Experiment 2 - Encrypted Geofence on GPS Coordinates
+# Experiment 2 - Encrypted Phone Number Lookup
 
-## Datasets
+## Dataset
 
-Two Kia K5 infotainment logs. Both store real GPS fixes, unlike the cell-tower
-positions used in Experiment 1.
+`datasets/niro_call.csv` - Bluetooth call history from a Kia Niro on an Android
+JellyBean infotainment platform. 204 rows, 16 columns.
 
-| | k5_jellybean_drive.csv | k5_kitkat_drive.csv |
-|---|---|---|
-| Vehicle | Kia K5, 2017 | Kia K5 (DL3), 2020 |
-| Platform | Android JellyBean | Android KitKat |
-| Rows | 613 | 6,820 |
-| Rows with GPS | 330 | 246 |
-| Collection period | 2022-04-01 to 04-15, continuous | 2023-06 to 2025-06, sparse |
-| Query center used | 37.86484, 127.05997 | 37.31808, 127.12741 |
+| Field | Rows with a value |
+|---|---|
+| Local timestamp and epoch milliseconds | 204 |
+| Bluetooth profile identifier | 185 |
+| Counterpart phone number | 19 |
+| Call direction and call state | 14 |
+| Paired device MAC address | 12 |
 
-Fields present in both logs: local timestamp, epoch milliseconds, latitude and
-longitude as integers scaled by 100,000, speed in km/h, and heading in degrees.
-JellyBean additionally records altitude and ignition on/off times. KitKat
-additionally records a server-side timestamp (6,547 rows) and a navigation
-destination identifier (25 rows).
-
-A value of -1 marks a field that was not recorded. A stored value of 3731808
-means 37.31808 degrees.
-
-The two logs differ sharply in density. JellyBean holds two weeks of daily
-driving, while KitKat spans two years but concentrates most of its fixes in three
-weeks of 2024. Running the same predicate on both shows the method does not
-depend on how the log was sampled.
+The 19 recorded numbers reduce to 4 distinct values, appearing 12, 3, 2 and 2
+times. One begins with 006, an international prefix, rather than a domestic 01x
+prefix. A value of -1 marks a field that was not recorded.
 
 ## Experiment
 
-Answer "was this vehicle inside a circle of radius R around point C?" without
-decrypting its coordinates. The circuit is the one used in Experiment 1; only the
-location layer differs.
+Answer "is there any record of a call with this number?" without decrypting the
+call log, and without disclosing the number to the custodian. The output is a
+single 0 or 1, so how many calls took place, when, and which record matched are
+never revealed.
 
-- Rows without a coordinate are pushed to 33.06N / 124.36E, over 500 km away, so
-  they always evaluate to 0.
-- `compute_geofence_score` compares squared distance against squared radius and
-  reads the sign with `he_step`.
-- Only the 0/1 verdict is decrypted. Latitude and longitude stay encrypted.
+`he_step` takes an input between -1 and 1, so an 11-digit number cannot be fed in
+directly.
 
-The same decision is also computed on plaintext and timed, as a check on the
-homomorphic result.
+- Zero-pad each number to 11 digits, recovering the leading zeros lost to integer
+  storage.
+- Split into groups of 3, 4 and 4 digits and divide by 999, 9999 and 9999.
+- Per group, the requester encrypts the two interval bounds and the custodian
+  builds an interval indicator with two `he_step` calls. Equality has to be
+  expressed as interval membership because `he_step` reads only a sign.
+- Multiply the three group indicators, so all three must match.
+- Sum every slot under encryption and apply `he_step` once more, reducing the
+  result to a single answer.
 
-The swept radii are 0.2, 0.5, 1, 2, 3 and 5 km. Radii of 50 km and 100 km were
-dropped from an earlier version of this sweep: both returned all 330 observed
-rows of the JellyBean log, so the answer was yes regardless of where the vehicle
-had been. A geofence query is only meaningful while the circle can exclude
-something.
+Rows with no number are given the prefix 999, which no real number uses.
+
+`MARGIN = 0.5` is the half-width of the accepted interval in integer digit units,
+so exactly one integer is accepted. It is applied before encryption, on the
+requester side.
+
+`detect_phone_exists(match_ctxt, max_count=C)` - C is an upper bound on the match
+count that scales the `he_step` input into [-1,1]. It describes the protocol, not
+the target, so it is declared in the clear and is not part of the encrypted query.
+It must stay above the actual match count.
+
+Taking the query numbers from the log is a convenience of the experiment. In the
+protocol the requester supplies a number it already holds, and the custodian
+never sees it either way.
 
 ## Results
 
-All twelve queries agreed with the plaintext computation on every one of the
-32,768 slots. Each query took 11.45 to 15.55 seconds against 0.123 to 0.261
-milliseconds on plaintext.
+Eleven queries: the four numbers in the log, one variant of each with the last
+digit changed, two further variants of the most frequent number with a digit
+changed in the first and middle group, and one number that never appears.
 
-| Radius | KitKat plain | KitKat cipher | JellyBean plain | JellyBean cipher | Agreement |
-|---|---|---|---|---|---|
-| 0.2 km | 3 | 3 | 4 | 4 | 32768/32768 |
-| 0.5 km | 13 | 13 | 4 | 4 | 32768/32768 |
-| 1 km | 52 | 52 | 5 | 5 | 32768/32768 |
-| 2 km | 56 | 56 | 5 | 5 | 32768/32768 |
-| 3 km | 58 | 58 | 53 | 53 | 32768/32768 |
-| 5 km | 58 | 58 | 254 | 254 | 32768/32768 |
+| Query | Description | Expected | Answer |
+|---|---|---|---|
+| 01020132924 | original | 1 | 1 |
+| 01020132925 | last digit differs | 0 | 0 |
+| 01065749080 | original | 1 | 1 |
+| 01065749081 | last digit differs | 0 | 0 |
+| 01026731582 | original | 1 | 1 |
+| 01026731583 | last digit differs | 0 | 0 |
+| 00687524858 | original | 1 | 1 |
+| 00687524859 | last digit differs | 0 | 0 |
+| 02020132924 | first group differs | 0 | 0 |
+| 01020232924 | middle group differs | 0 | 0 |
+| 01011112222 | not in the log | 0 | 0 |
 
-Neither log is saturated at the widest radius: 58 of the 246 KitKat fixes and 254
-of the 330 JellyBean fixes fall inside a 5 km circle, so every query in the sweep
-still excludes part of the log.
+All eleven agreed with the plaintext computation on every one of the 32,768
+slots. Dividing a 4-digit group by 9999 spaces adjacent values 0.0001 apart while
+`he_step` resolves to about 1e-8, so a single differing digit separates cleanly.
+
+Step 7 re-runs only the existence circuit for C in {32, 256, 2048}, reusing the
+match ciphertext, to check the answer holds as the declared bound grows.
 
 ## How to run
 
 ```bash
-export PYTHONPATH=/pp_forensic
-cd /pp_forensic/experiments/experiment2
+export PYTHONPATH=<repo root>
+cd <repo root>/experiments/experiment2
 python3 -W ignore -u test2.py
 ```
 
-The script writes its own transcript, so no shell redirect is needed.
+Console output is written to `results/result2.txt` automatically, so do not pipe
+through `tee`.
 
 ## Output
 
 | File | Contents |
 |---|---|
 | `results/result2.txt` | Console output |
-| `results/exp2_<dataset>_summary.csv` | Per radius: plaintext count, ciphertext count, agreement, elapsed time for both |
-| `results/exp2_all_summary.csv` | Both datasets in one table |
+| `results/exp2_niro_match_summary.csv` | Per query: expected and returned answer, existence value before thresholding, agreement, worst decrypted value on each side, elapsed times |
+| `results/exp2_niro_maxcount_sweep.csv` | Existence bit over C in {32, 256, 2048} |
+| `results/exp2_niro_slots.csv` | Per slot decrypted values |
+
+The `plain` and `cipher` columns are a scoring aid, not part of the decision.

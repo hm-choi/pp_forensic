@@ -1,6 +1,6 @@
 import numpy as np
 import pandas as pd
-import time, os
+import time
 
 import heaan as hn
 from engine.engine import HEEngine
@@ -15,104 +15,97 @@ hft = HEForensicTest(engine)
 ho  = HEOperator(engine)
 
 SLOTS = 32768
-RADIUS_LIST = [0.5, 1.0, 5.0, 10.0, 50.0, 100.0]          # km
 
-# Column names differ between logs, so each dataset declares its own here.
-# Adding another log only requires one more entry.
-DATASETS = {
-    'k5_kitkat':    dict(file='k5_kitkat_drive.csv',
-                         lat='위도_x1e5', lon='경도_x1e5',
-                         center=(37.31808, 127.12741)),
-    'k5_jellybean': dict(file='k5_jellybean_drive.csv',
-                         lat='위도_x1e5', lon='경도_x1e5',
-                         center=(37.86484, 127.05997)),
-}
+#=======================#
+##  2. Load Dataset    ##
+#=======================#
+car = pd.read_csv('../../datasets/niro_call.csv')
 
-
-def run(tag):
-    st = DATASETS[tag]
-    CLAT, CLON = st['center']
-
-    car = pd.read_csv('../../datasets/' + st['file'])
-    used = min(len(car), SLOTS)
-    pad = SLOTS - used
-
-    raw_lat = np.pad(car[st['lat']].to_numpy()[:used], (0, pad), constant_values=-1).astype(float)
-    raw_lon = np.pad(car[st['lon']].to_numpy()[:used], (0, pad), constant_values=-1).astype(float)
-
-    # Rows with no coordinate (-1) are pushed to a point far southwest of the
-    # Korean peninsula, so they never fall inside any queried radius.
-    lat = np.where(raw_lat == -1, 33.06 * 1e5, raw_lat) / 1e5
-    lon = np.where(raw_lon == -1, 124.36 * 1e5, raw_lon) / 1e5
-    observed = (raw_lat != -1) & (raw_lon != -1)
-
-    enc_lat = ho.encrypt(lat)
-    enc_lon = ho.encrypt(lon)
-
-    # Plaintext ground truth. Used only for scoring, never for the decision.
-    K_LAT = 110.574
-    K_LON = 111.320 * np.cos(np.radians(CLAT))
-    L = 8.0                                                # normalization width used by compute_geofence_score
-    dist_km   = np.sqrt(((lat - CLAT) * K_LAT) ** 2 + ((lon - CLON) * K_LON) ** 2)
-    dist_norm = ((lat - CLAT) / L) ** 2 + ((lon - CLON) * K_LON / L / K_LAT) ** 2
-
-    print("\n" + "=" * 78)
-    print(f"[{tag}]  file {st['file']}   {used} of {len(car)} rows used   {int(observed.sum())} rows with coordinates")
-    print(f"         query center {CLAT}, {CLON}")
-    print("=" * 78)
-    print("  stat    radius     plain   cipher     agreement    gray   TIME")
-
-    rows, curve = [], []
-    keep = np.concatenate([np.where(observed)[0], np.where(~observed)[0][:1]])
-
-    for r in RADIUS_LIST:
-        threshold = (r / L / K_LAT) ** 2
-        step_in = -(dist_norm - threshold)                 # the value actually fed to he_step
-
-        T = time.time()
-        ct = hft.compute_geofence_score(enc_lat, enc_lon, CLAT, CLON, r)
-        el = time.time() - T
-
-        out = np.array(ho.decrypt(ct))[:SLOTS]
-        he  = (out > 0.5).astype(int)
-        pl  = (dist_km <= r).astype(int)
-        agree = int((he == pl).sum())
-        gray  = int(((out > 0.01) & (out < 0.99)).sum())
-        mark  = 'OK' if agree == SLOTS else 'X '
-
-        print(f"  {mark}    {r:6.1f} km   {int(pl.sum()):6d}   {int(he.sum()):6d}   "
-              f"{agree}/{SLOTS}   {gray:5d}   {el:.2f}s")
-
-        rows.append((tag, r, int(pl.sum()), int(he.sum()), agree, gray, el))
-        for i in keep:
-            curve.append((r, int(i), float(step_in[i]), float(out[i]), float(dist_km[i])))
-
-    os.makedirs('results', exist_ok=True)
-    pd.DataFrame(rows, columns=['dataset', 'radius', 'plain', 'cipher', 'agree', 'gray', 'sec']
-                 ).to_csv('results/exp3_' + tag + '_summary.csv', index=False)
-    pd.DataFrame(curve, columns=['radius', 'slot', 'step_input', 'he_output', 'dist_km']
-                 ).to_csv('results/exp3_' + tag + '_curve.csv', index=False)
-    return rows
+#=========================#
+##  3. Do Preprocessing  ##
+#=========================#
+# Phone numbers are stored as integers, so leading zeros are lost.
+# A domestic mobile number (01x) loses one zero and an international prefix (006)
+# loses two, so every value is zero-padded back to 11 digits instead of
+# branching on length.
+WIDTHS = (3, 4, 4)                           # 010 / 2013 / 2924
+DENOMS = tuple(10 ** w - 1 for w in WIDTHS)  # 999 / 9999 / 9999
+NDIGIT = sum(WIDTHS)
+UNOBSERVED_PREFIX = 999                      # a 3-digit prefix no real number uses
 
 
-if __name__ == '__main__':
-    allrows = []
-    for tag in DATASETS:
-        allrows += run(tag)
+def split_phone(value):
+    d = str(int(value)).zfill(NDIGIT)
+    out, pos = [], 0
+    for w in WIDTHS:
+        out.append(int(d[pos:pos + w]))
+        pos += w
+    return out
 
-    print("\n" + "=" * 78)
-    print("SUMMARY   (plain = ground truth, cipher = homomorphic decision)")
-    print("=" * 78)
-    bad = 0
-    for tag, r, pl, he, agree, gray, el in allrows:
-        ok = agree == SLOTS
-        bad += (not ok)
-        print(f"  {tag:<14}{r:>7.1f}km  plain {pl:>6}  cipher {he:>6}   {'match' if ok else 'mismatch'}")
-    print(f"\n  {len(allrows)} queries in total, {bad} mismatched")
 
-    try:
-        os.chmod('results', 0o777)
-        for f in os.listdir('results'):
-            os.chmod(os.path.join('results', f), 0o666)
-    except Exception:
-        pass
+def bump(num, i):
+    """Return num with exactly one digit at position i replaced."""
+    d = list(num)
+    d[i] = str((int(d[i]) + 1) % 10)
+    return ''.join(d)
+
+
+raw = np.pad(car['상대번호'].to_numpy(), (0, SLOTS - len(car)), constant_values=-1)
+
+# Rows with no number (-1) get the prefix 999 so they never match any target.
+# This mirrors how the geofence experiment pushes unrecorded coordinates far away.
+segs = np.zeros((len(WIDTHS), SLOTS))
+for idx, value in enumerate(raw):
+    if value == -1:
+        segs[0][idx] = UNOBSERVED_PREFIX / DENOMS[0]
+    else:
+        for k, part in enumerate(split_phone(value)):
+            segs[k][idx] = part / DENOMS[k]
+
+enc_segs = [ho.encrypt(segs[k]) for k in range(len(WIDTHS))]
+
+#=========================================#
+##  4. Build the query list               ##
+#=========================================#
+# Take every number that actually appears in the log, then derive variants that
+# differ in exactly one digit.
+obs  = pd.Series(raw[raw != -1])
+real = [str(int(v)).zfill(NDIGIT) for v in obs.value_counts().index]   # most frequent first
+
+QUERIES = []
+for num in real:
+    QUERIES.append((num, 'original', 1))
+    QUERIES.append((bump(num, 10), 'last digit differs', 0))
+for num in real[:1]:                         # the most frequent number also gets first- and middle-group variants
+    QUERIES.append((bump(num, 1), 'first group differs', 0))
+    QUERIES.append((bump(num, 5), 'middle group differs', 0))
+QUERIES.append(('01011112222', 'not in log', 0))
+
+#=========================================#
+##  5. Test the phone number match check  ##
+#=========================================#
+print(f"\nNiro call log: {len(car)} rows   {int((raw != -1).sum())} recorded numbers   {len(real)} distinct")
+print(f"Number split {WIDTHS}   normalization denominators {DENOMS}")
+print("\nquery number  description             exp  answer  plain  cipher   agreement      TIME")
+print('-' * 92)
+
+wrong = 0
+for target, why, expect in QUERIES:
+    tsegs = split_phone(int(target))
+
+    T = time.time()
+    match  = hft.detect_phone_match(enc_segs, tsegs, DENOMS)
+    exists = hft.detect_phone_exists(match)
+    el = time.time() - T
+
+    answer = int(round(float(ho.decrypt(exists)[0])))       # final answer, 0 or 1
+    out    = np.array(ho.decrypt(match))[:SLOTS]
+    he_hit = (out > 0.5).astype(int)
+    pl_hit = np.array([1 if v != -1 and split_phone(v) == tsegs else 0 for v in raw])
+    agree  = int((he_hit == pl_hit).sum())
+
+    ok = (answer == expect) and (agree == SLOTS)
+    wrong += (not ok)
+    mark = ' ' if ok else ' X'
+
+    print(f"{target:<14}{why:<22}{expect:>4}{answer:>7}{int(pl_hit.sum()):>7}{int(he_hit.sum()):>7}{agree:>10}/{SLOTS}{el:>8.2f}s{mark}")

@@ -13,14 +13,11 @@ from operators.forensic_operator import HEForensicTest
 #=========================#
 ##  0. Console logging   ##
 #=========================#
-# Everything printed below also goes to results/result2.txt.
 os.makedirs('results', exist_ok=True)
 LOG_FILE = open('results/result2.txt', 'w', encoding='utf-8')
 
 
 class Tee:
-    """Write to the terminal and to the log file at the same time."""
-
     def __init__(self, *streams):
         self.streams = streams
 
@@ -47,20 +44,9 @@ engine = HEEngine(device_type="cpu",
 hft = HEForensicTest(engine)
 ho = HEOperator(engine)
 
-slot_count = 32768
-
-DEFAULT_MAX_COUNT = 32                       # C used for the main table
-MAX_COUNTS = [32, 256, 2048]                 # C values checked in step 7
-
 
 def extremes(out, plain):
-    """Worst decrypted value on each side of the decision.
-
-    The first return value is the reading furthest from 0 among the rows that do
-    not hold the target number, and the second and third are the readings
-    furthest from and closest to 1 among the rows that do. Every other row is
-    closer to its ideal value than these.
-    """
+    """Worst reading among the false rows, and worst/best among the true rows."""
     z = out[plain == 0]
     o = out[plain == 1]
     zmax = float(np.abs(z).max()) if z.size else float('nan')
@@ -69,224 +55,181 @@ def extremes(out, plain):
     return zmax, omin, omax
 
 
-def dump_slots(out, plain, n=20):
-    """Print the first n decrypted slots exactly as they come out of decrypt().
-
-    This is the raw evidence: slots the query includes read as values within
-    about 1e-9 of 1, and slots it excludes read as values within about 1e-9 of 0.
-    """
-    print("  first", n, "slots :", out[:n].tolist())
-    print("  plain            :", plain[:n].tolist())
-
-
-def fmt(v):
-    """Print a decrypted value with enough digits to see the error."""
-    return '  n/a  ' if v != v else f'{v:.10f}'
+def report(name, out, plain):
+    zmax, omin, omax = extremes(out, plain)
+    print(f"  rows where false   worst reading  {zmax:.3e}")
+    print(f"  rows where true    worst reading  {omin:.10f}   best {omax:.10f}")
+    return zmax, omin, omax
 
 #=======================#
 ##  2. Load Dataset    ##
 #=======================#
-car_data = pd.read_csv('../../datasets/niro_call.csv')
+car_data = pd.read_csv('../../datasets/avante_accident.csv')
+slot_count = 32768
+row_count = len(car_data)          # 16 recorded rows, the rest is padding
 
 #=========================#
 ##  3. Do Preprocessing  ##
 #=========================#
-# Phone numbers are stored as integers, so leading zeros are lost.
-# A domestic mobile number (01x) loses one zero and an international prefix (006)
-# loses two, so every value is zero-padded back to 11 digits.
-WIDTHS = (3, 4, 4)                           # 010 / 2013 / 2924
-DENOMS = tuple(10 ** w - 1 for w in WIDTHS)  # 999 / 9999 / 9999
-NDIGIT = sum(WIDTHS)
-UNOBSERVED_PREFIX = 999                      # a 3-digit prefix no real number uses
+t_real = np.pad(
+    car_data['t_real'].to_numpy(),
+    (0, slot_count - row_count),
+    constant_values=-1
+).astype(float)
+speed = np.pad(
+    car_data['speed'].to_numpy(),
+    (0, slot_count - row_count),
+    constant_values=0
+).astype(float)
 
-
-def split_phone(value):
-    """Split an integer phone number into the digit groups given by WIDTHS."""
-    d = str(int(value)).zfill(NDIGIT)
-    out, pos = [], 0
-    for w in WIDTHS:
-        out.append(int(d[pos:pos + w]))
-        pos += w
-    return out
-
-
-def bump(num, i):
-    """Return num with exactly one digit at position i replaced.
-
-    Every variant used below differs from the original in exactly one digit.
-    What changes between them is which digit group that digit sits in, and the
-    group matters: the first group is divided by 999 and the other two by 9999,
-    so one digit is worth about 1e-3 in the first group and about 1e-4 in the
-    other two. The 4-digit groups are therefore the harder case.
-    """
-    d = list(num)
-    d[i] = str((int(d[i]) + 1) % 10)
-    return ''.join(d)
-
-
-def grouped(num):
-    """Write a number as its digit groups, e.g. 010-2013-2924."""
-    out, pos = [], 0
-    for w in WIDTHS:
-        out.append(num[pos:pos + w])
-        pos += w
-    return '-'.join(out)
-
-
-raw = np.pad(car_data['상대번호'].to_numpy(), (0, slot_count - len(car_data)), constant_values=-1)
-
-# Rows with no number (-1) get the prefix 999 so they never match any target.
-segs = np.zeros((len(WIDTHS), slot_count))
-for idx, value in enumerate(raw):
-    if value == -1:
-        segs[0][idx] = UNOBSERVED_PREFIX / DENOMS[0]
-    else:
-        for k, part in enumerate(split_phone(value)):
-            segs[k][idx] = part / DENOMS[k]
+# Speed is recorded only for the rows before impact, so the speed predicates
+# are scored on those rows.
+speed_rows = int((car_data['speed'].to_numpy() != -1).sum())
 
 #=====================#
 ##  4. Encrypt Data  ##
 #=====================#
-enc_segs = [ho.encrypt(segs[k]) for k in range(len(WIDTHS))]
+t_real_ctxt = ho.encrypt(t_real)
+speed_ctxt = ho.encrypt(speed)
 
-#=========================================#
-##  5. Build the query list               ##
-#=========================================#
-# Every number that appears in the log, plus variants that differ in exactly one
-# digit. A single wrong digit is the hardest negative for the comparison.
-obs = pd.Series(raw[raw != -1])
-real = [str(int(v)).zfill(NDIGIT) for v in obs.value_counts().index]   # most frequent first
+MAX_SPEED = 200.0                  # public normalization constant
+THRESHOLD_SPEED = 60.0
 
-QUERIES = []
-for num in real:
-    QUERIES.append((num, 'original', 1))
-    QUERIES.append((bump(num, 10), 'one digit, last group', 0))
-for num in real[:1]:
-    QUERIES.append((bump(num, 1), 'one digit, first group', 0))
-    QUERIES.append((bump(num, 5), 'one digit, middle group', 0))
-QUERIES.append(('01011112222', 'not in the log', 0))
+# Window in the log's own unit (ms before impact). Neither bound sits on a
+# recorded timestamp, and the padding value -1 falls outside, so all 32,768
+# slots can be checked against the plaintext answer.
+START = -3000.0
+END = -1000.0
+RANGE = 5000.0
 
-print(f"\nNiro call log: {len(car_data)} rows   {int((raw != -1).sum())} recorded numbers   "
-      f"{len(real)} distinct")
-print(f"Number split {WIDTHS}   normalization denominators {DENOMS}")
+# Query parameters, encrypted by the requester in the log's own units. Each
+# circuit subtracts them from a freshly encrypted data ciphertext and
+# normalizes afterwards, so the two operands always sit at the same level.
+# detect_speed_increase carries no parameter.
+PARAM_ENC_START = time.time()
+enc_threshold = hft.encrypt_param(THRESHOLD_SPEED)
+enc_start = hft.encrypt_param(START)
+enc_end = hft.encrypt_param(END)
+PARAM_ENC_TIME = time.time() - PARAM_ENC_START
 
-#=========================================#
-##  6. Test the phone number match check  ##
-#=========================================#
-print(f"\nPer-row match and existence bit at C = {DEFAULT_MAX_COUNT}")
-print("query number   description              exp  answer   exist value    plain  cipher"
-      "   agreement   nonmatch worst   match worst    MATCH TIME  EXIST TIME  PLAIN TIME")
-print('-' * 150)
+print("\nAvante EDR log:", row_count, "recorded rows,", speed_rows, "rows with a recorded speed")
+print("Query parameters encrypted in", round(PARAM_ENC_TIME * 1000, 3), "ms")
 
-rows = []
-slot_rows = []
-wrong = 0
-match_cache = {}
+#=====================================================#
+##  5. Test the acceleration and deceleration test   ##
+#=====================================================#
+START_TIME = time.time()
+result = hft.detect_speed_increase(speed_ctxt)
+HE_TIME = time.time() - START_TIME
 
-for target, why, expect in QUERIES:
-    tsegs = split_phone(int(target))
+# np.roll(speed, 1)[i] is speed[i-1], what the one-slot rotation computes.
+START_TIME = time.time()
+plain1 = (speed - np.roll(speed, 1) > 0).astype(int)
+PLAIN_TIME = time.time() - START_TIME
 
-    START_TIME = time.time()
-    match = hft.detect_phone_match(enc_segs, tsegs, DENOMS)
-    MATCH_TIME = time.time() - START_TIME
+out1 = np.array(ho.decrypt(result))[:row_count]
+he1 = (out1 > 0.5).astype(int)
+agree1 = int((he1[:speed_rows] == plain1[:speed_rows]).sum())
 
-    START_TIME = time.time()
-    exists = hft.detect_phone_exists(match, max_count=DEFAULT_MAX_COUNT)
-    EXIST_TIME = time.time() - START_TIME
+print("\n속도 증가 여부 (1인 경우 속도가 증가한 것을 의미)")
+print("  cipher", he1[:speed_rows].tolist())
+print("  plain ", plain1[:speed_rows].tolist())
+print("  agree ", agree1, "/", speed_rows)
+z1, n1, x1 = report('speed increase', out1[:speed_rows], plain1[:speed_rows])
+print("  TIME", round(HE_TIME, 2), "s   PLAIN TIME", round(PLAIN_TIME * 1000, 3), "ms")
 
-    # Plaintext answer. Comparing the stored integers is equivalent to comparing
-    # the digit groups, since two different integers cannot share an 11-digit
-    # zero-padded form.
-    START_TIME = time.time()
-    plain_hit = (raw == int(target)).astype(int)
-    plain_any = int(plain_hit.sum() > 0)
-    PLAIN_TIME = time.time() - START_TIME
+#===========================================#
+##  6. Test the Speeding violation check   ##
+#===========================================#
+START_TIME = time.time()
+result2 = hft.detect_overspeed(speed_ctxt, enc_threshold)
+HE_TIME2 = time.time() - START_TIME
 
-    exist_value = float(ho.decrypt(exists)[0])       # the answer bit before thresholding
-    answer = 1 if exist_value > 0.5 else 0
-    out = np.array(ho.decrypt(match))[:slot_count]
-    cipher_hit = (out > 0.5).astype(int)
-    agree = int((cipher_hit == plain_hit).sum())
-    zmax, omin, omax = extremes(out, plain_hit)
+START_TIME = time.time()
+plain2 = (speed > THRESHOLD_SPEED).astype(int)
+PLAIN_TIME2 = time.time() - START_TIME
 
-    ok = (answer == expect) and (answer == plain_any) and (agree == slot_count)
-    wrong += (not ok)
-    mark = '' if ok else '  X'
+out2 = np.array(ho.decrypt(result2))[:row_count]
+he2 = (out2 > 0.5).astype(int)
+agree2 = int((he2[:speed_rows] == plain2[:speed_rows]).sum())
 
-    print(f"{grouped(target):<15}{why:<25}{expect:>4}{answer:>8}  {exist_value:>13.10f}"
-          f"{int(plain_hit.sum()):>7}{int(cipher_hit.sum()):>7}{agree:>10}/{slot_count}"
-          f"     {zmax:.3e}     {fmt(omin)}"
-          f"{MATCH_TIME:>10.2f}s{EXIST_TIME:>10.2f}s{PLAIN_TIME*1000:>10.3f}ms{mark}")
+print("\n속도 위반 여부 (1인 경우 속도가 60보다 크다는 것을 의미)")
+print("  cipher", he2[:speed_rows].tolist())
+print("  plain ", plain2[:speed_rows].tolist())
+print("  agree ", agree2, "/", speed_rows)
+z2, n2, x2 = report('overspeed', out2[:speed_rows], plain2[:speed_rows])
+print("  TIME", round(HE_TIME2, 2), "s   PLAIN TIME", round(PLAIN_TIME2 * 1000, 3), "ms")
 
-    rows.append((target, grouped(target), why, expect, answer, exist_value,
-                 int(plain_hit.sum()), int(cipher_hit.sum()),
-                 agree, slot_count, zmax, omin, omax,
-                 MATCH_TIME, EXIST_TIME, PLAIN_TIME))
-    match_cache[target] = match
+#=====================================#
+##  7. Test the time window check    ##
+#=====================================#
+START_TIME = time.time()
+result3 = hft.time_range(t_real_ctxt, enc_start, enc_end, RANGE)
+HE_TIME3 = time.time() - START_TIME
 
-    # Raw per-slot readings for the rows that hold a number at all.
-    if plain_hit.sum() or target == real[0]:
-        dump_slots(out[:len(car_data)], plain_hit[:len(car_data)])
-    slot_rows.append((target, grouped(target), why, exist_value,
-                      [float(v) for v in out[:len(car_data)]]))
+START_TIME = time.time()
+plain3 = ((t_real > START) & (t_real < END)).astype(int)
+PLAIN_TIME3 = time.time() - START_TIME
 
-print("\n", len(QUERIES), "queries in total,", wrong, "wrong")
+full3 = np.array(ho.decrypt(result3))[:slot_count]
+he3_all = (full3 > 0.5).astype(int)
+agree3 = int((he3_all == plain3).sum())
+he3 = he3_all[:row_count]
+out3 = full3[:row_count]
 
-#=========================================#
-##  7. Test the summation bound C         ##
-#=========================================#
-# detect_phone_exists divides the slot sum by a public constant C before the
-# step, so C is an upper bound the requester declares in advance. This checks
-# that the answer stays correct as C grows. The match ciphertext is reused, so
-# only the existence circuit is re-run.
-PROBES = [(real[0], 1), ('01011112222', 0)]
+print("\n시간 범위:", START, ",", END)
+print("  cipher", he3.tolist())
+print("  plain ", plain3[:row_count].tolist())
+print("  agree ", agree3, "/", slot_count, "  (padding included)")
+z3, n3, x3 = report('time window', full3, plain3)
+print("  TIME", round(HE_TIME3, 2), "s   PLAIN TIME", round(PLAIN_TIME3 * 1000, 3), "ms")
 
-print("\nExistence bit as the declared bound C grows")
-print("query number        C   exp  answer    exist value   verdict      EXIST TIME")
-print('-' * 104)
-
-sweep = []
-for target, expect in PROBES:
-    for C in MAX_COUNTS:
-        START_TIME = time.time()
-        exists = hft.detect_phone_exists(match_cache[target], max_count=C)
-        EXIST_TIME = time.time() - START_TIME
-
-        exist_value = float(ho.decrypt(exists)[0])
-        answer = 1 if exist_value > 0.5 else 0
-        ok = (answer == expect)
-
-        print(f"{grouped(target):<15}{C:>8}{expect:>6}{answer:>8}  {exist_value:>13.10f}"
-              f"{'   correct' if ok else '   WRONG  ':>12}{EXIST_TIME:>14.2f}s")
-        sweep.append((target, C, expect, answer, exist_value, int(ok), EXIST_TIME))
+#===============================#
+##  8. Per-row answers         ##
+#===============================#
+# A dot marks a row with no recorded speed.
+print("\nrow  t_real  speed |    incr out  p |     over out  p |      win out  p")
+print("-" * 74)
+for i in range(row_count):
+    if i < speed_rows:
+        c1, p1 = f"{out1[i]:.10f}", str(plain1[i])
+        c2, p2 = f"{out2[i]:.10f}", str(plain2[i])
+    else:
+        c1 = p1 = c2 = p2 = '.'
+    print(f"{i:>3}{int(t_real[i]):>8}{int(speed[i]):>7} |"
+          f"{c1:>14}{p1:>3} |{c2:>14}{p2:>3} |{out3[i]:>14.10f}{plain3[i]:>3}")
 
 #=====================#
-##  8. Save Results  ##
+##  9. Save Results  ##
 #=====================#
-pd.DataFrame(rows, columns=['target', 'grouped', 'description', 'expected', 'answer', 'exist_value',
-                            'plain_hits', 'cipher_hits', 'agree', 'total',
-                            'zero_max', 'one_min', 'one_max',
-                            'match_sec', 'exist_sec', 'plain_sec']
-             ).to_csv('results/exp3_niro_match_summary.csv', index=False)
-pd.DataFrame(sweep, columns=['target', 'max_count', 'expected', 'answer', 'exist_value',
-                             'correct', 'exist_sec']
-             ).to_csv('results/exp3_niro_maxcount_sweep.csv', index=False)
-pd.DataFrame([(t, g, w, e, i, v)
-              for t, g, w, e, vs in slot_rows
-              for i, v in enumerate(vs)],
-             columns=['target', 'grouped', 'description', 'exist_value', 'slot', 'decrypted']
-             ).to_csv('results/exp3_niro_slots.csv', index=False)
+pd.DataFrame(
+    [('speed increase', speed_rows, int(plain1[:speed_rows].sum()),
+      int(he1[:speed_rows].sum()), agree1, speed_rows, z1, n1, x1, HE_TIME, PLAIN_TIME),
+     ('overspeed', speed_rows, int(plain2[:speed_rows].sum()),
+      int(he2[:speed_rows].sum()), agree2, speed_rows, z2, n2, x2, HE_TIME2, PLAIN_TIME2),
+     ('time window', slot_count, int(plain3.sum()),
+      int(he3_all.sum()), agree3, slot_count, z3, n3, x3, HE_TIME3, PLAIN_TIME3)],
+    columns=['predicate', 'scored', 'plain', 'cipher', 'agree', 'total',
+             'zero_max', 'one_min', 'one_max', 'he_sec', 'plain_sec']
+).to_csv('results/exp3_avante_summary.csv', index=False)
 
-print("\nSUMMARY")
-print("  match check ", len(QUERIES), "queries,", wrong, "wrong")
-print("  bound check ", len(sweep), "existence calls over C in", MAX_COUNTS, ",",
-      sum(1 for s in sweep if not s[5]), "wrong")
-print("Saved: results/result2.txt, results/exp3_niro_match_summary.csv, "
-      "results/exp3_niro_maxcount_sweep.csv")
+pd.DataFrame({
+    'row': np.arange(row_count),
+    't_real': t_real[:row_count].astype(int),
+    'speed': speed[:row_count].astype(int),
+    'incr_out': out1, 'incr_cipher': he1, 'incr_plain': plain1[:row_count],
+    'over_out': out2, 'over_cipher': he2, 'over_plain': plain2[:row_count],
+    'win_out': out3, 'win_cipher': he3, 'win_plain': plain3[:row_count],
+}).to_csv('results/exp3_avante_rows.csv', index=False)
 
-#=========================#
-##  9. Close the log     ##
-#=========================#
+bad = (agree1 != speed_rows) + (agree2 != speed_rows) + (agree3 != slot_count)
+print("\n 3 predicates in total,", bad, "mismatched")
+print("Saved: results/result2.txt, results/exp3_avante_summary.csv, "
+      "results/exp3_avante_rows.csv")
+
+#==========================#
+##  10. Close the log     ##
+#==========================#
 sys.stdout = sys.__stdout__
 sys.stderr = sys.__stderr__
 LOG_FILE.close()

@@ -1,116 +1,71 @@
-# Experiment 3 - Encrypted Phone Number Lookup
+# Experiment 3 - Encrypted Predicates on an EDR Log
 
 ## Dataset
 
-`datasets/niro_call.csv` - Bluetooth call history from a Kia Niro running an
-Android JellyBean infotainment platform. 204 rows, 16 columns.
+`datasets/avante_accident.csv` - event data recorder readout from a Hyundai
+Avante, covering the seconds around an impact. 16 rows.
 
-| Field | Rows with a value |
+| Field | Contents |
 |---|---|
-| Local timestamp and epoch milliseconds | 204 |
-| Bluetooth profile identifier | 185 |
-| Counterpart phone number | 19 |
-| Call direction and call state | 14 |
-| Paired device MAC address | 12 |
-| Handset and SIM identifiers (IMEI, ICCID) | 1 |
-| Coordinates | 1 latitude, no longitude |
+| `t_real` | Milliseconds relative to impact, negative before |
+| `speed` | Vehicle speed in km/h, -1 once recording stops |
 
-The 19 recorded numbers reduce to 4 distinct values, appearing 12, 3, 2 and 2
-times. One begins with 006, an international-dialling prefix, rather than a
-domestic 01x prefix. A value of -1 marks a field that was not recorded.
+Speed is recorded for the 11 rows before impact. The remaining slots of the
+32,768-slot ciphertext are padding, and `t_real` is padded with -1.
 
-Location queries are not possible on this log, since no row carries a complete
-coordinate pair.
+This log is short enough to print in full, so every decrypted value can be read
+directly rather than summarized.
 
 ## Experiment
 
-Answer "is there any record of a call with this number?" without decrypting the
-call log. The output is a single 0 or 1, so how many calls took place, when they
-took place, and which record matched are never revealed.
+Evaluate three warrant conditions on one encrypted log without decrypting it, and
+without disclosing the thresholds or the window to the custodian.
 
-`he_step` expects an input between -1 and 1, so an 11-digit number cannot be fed
-in directly.
+| Predicate | Question | Query parameter |
+|---|---|---|
+| `detect_speed_increase` | Did speed rise between consecutive samples? | none |
+| `detect_overspeed` | Was speed above 60 km/h? | threshold, encrypted |
+| `time_range` | Is the sample inside the observation window? | both bounds, encrypted |
 
-- Zero-pad each number to 11 digits, recovering the leading zeros lost by integer
-  storage.
-- Split into groups of 3, 4 and 4 digits and divide by 999, 9999 and 9999.
-- Per group, build a narrow interval indicator with two `he_step` calls, since
-  `he_step` reads only a sign and equality must be expressed as interval
-  membership.
-- Multiply the three group indicators, so all three must match to yield 1.
-- Sum every slot under encryption and apply `he_step` once more, reducing the
-  result to a single answer.
+- Every parameter is encrypted in the log's own unit. Each circuit subtracts it
+  from a freshly encrypted data ciphertext first and normalizes afterwards, so
+  the two operands always sit at the same level.
+- `detect_speed_increase` compares the log against itself with a one-slot
+  rotation, so it carries no query parameter.
+- The window predicate costs two `he_step` calls, one per boundary, so it takes
+  about twice as long as a single-sided comparison.
 
-Rows with no number are given the prefix 999, which no real number uses, so they
-never match any target.
-
-`detect_phone_match(enc_segs, target_segs, denoms, margin=0.5)` - margin is the
-half-width of the accepted interval in integer units, so 0.5 matches exactly one
-integer.
-
-`detect_phone_exists(match_ctxt, max_count=32)` - max_count is the upper bound on
-the number of matches that the requester declares in advance. It scales the
-`he_step` input into [-1,1], so it must stay above the actual match count.
-
-The script runs two checks. The first evaluates eleven queries at
-`max_count = 32` and compares both the per-row match vector and the single answer
-bit against plaintext. The second re-runs only the existence circuit at
-`max_count` values of 32, 256 and 2048, on the most frequent number in the log
-and on a number that never appears, to confirm the answer does not depend on how
-generously the bound was declared.
+The window is -3000 ms to -1000 ms. Neither bound sits on a recorded timestamp,
+since a bound on a sample would ask whether a value is strictly less than itself.
+The padding value -1 also falls outside, so all 32,768 slots can be checked
+against the plaintext answer.
 
 ## Results
 
-Eleven queries: the four numbers present in the log, one variant of each with the
-last digit changed, two further variants of the most frequent number with a digit
-changed in the first and middle group, and one number that never appears.
+Three predicates, all agreeing with the plaintext computation. The speed
+predicates are scored on the 11 rows carrying a speed; the window predicate is
+scored on all 32,768 slots including padding.
 
-| Query | Description | Expected | Answer | Plain hits | Cipher hits | Agreement |
-|---|---|---|---|---|---|---|
-| 01020132924 | original | 1 | 1 | 12 | 12 | 32768/32768 |
-| 01020132925 | last digit differs | 0 | 0 | 0 | 0 | 32768/32768 |
-| 01065749080 | original | 1 | 1 | 3 | 3 | 32768/32768 |
-| 01065749081 | last digit differs | 0 | 0 | 0 | 0 | 32768/32768 |
-| 01026731582 | original | 1 | 1 | 2 | 2 | 32768/32768 |
-| 01026731583 | last digit differs | 0 | 0 | 0 | 0 | 32768/32768 |
-| 00687524858 | original | 1 | 1 | 2 | 2 | 32768/32768 |
-| 00687524859 | last digit differs | 0 | 0 | 0 | 0 | 32768/32768 |
-| 02020132924 | first group differs | 0 | 0 | 0 | 0 | 32768/32768 |
-| 01020232924 | middle group differs | 0 | 0 | 0 | 0 | 32768/32768 |
-| 01011112222 | not in log | 0 | 0 | 0 | 0 | 32768/32768 |
-
-All eleven matched expectation and agreed with the plaintext computation on every
-slot. The match circuit took 76.15 to 84.84 seconds and the existence circuit
-12.07 to 12.95 seconds, against 0.162 to 0.538 milliseconds on plaintext.
-
-Dividing a 4-digit group by 9999 spaces adjacent values 0.0001 apart, so a single
-differing digit separates cleanly.
-
-The declared bound behaves the same way across two orders of magnitude.
-
-| max_count | 01020132924 (present) | 01011112222 (absent) | Existence time |
-|---|---|---|---|
-| 32 | 1 | 0 | 12.84 s / 11.99 s |
-| 256 | 1 | 0 | 12.95 s / 11.81 s |
-| 2048 | 1 | 0 | 13.89 s / 11.75 s |
-
-All six calls returned the expected answer, so the requester can declare a bound
-well above the true match count without changing the result.
+Per-row decrypted values are printed as a table and saved to
+`exp3_avante_rows.csv`. Elapsed times are in the `he_sec` column of the summary
+CSV. Query parameter encryption is timed separately and reported once, before the
+predicates run.
 
 ## How to run
 
 ```bash
-export PYTHONPATH=/pp_forensic
-cd /pp_forensic/experiments/experiment3
+export PYTHONPATH=<repo root>
+cd <repo root>/experiments/experiment3
 python3 -W ignore -u test2.py
 ```
 
-The script writes its own transcript, so no shell redirect is needed.
+Console output is written to `results/result2.txt` automatically, so do not pipe
+through `tee`.
 
 ## Output
 
 | File | Contents |
 |---|---|
 | `results/result2.txt` | Console output |
-| `results/exp3_niro_match_summary.csv` | Per query: expected answer, returned answer, plaintext and ciphertext hit counts, agreement, match and existence timings, plaintext timing |
-| `results/exp3_niro_maxcount_sweep.csv` | Per bound: returned answer, whether it was correct, elapsed time |
+| `results/exp3_avante_summary.csv` | Per predicate: plaintext count, ciphertext count, agreement, worst decrypted value on each side, elapsed times |
+| `results/exp3_avante_rows.csv` | Per row: timestamp, speed, and the decrypted value, ciphertext verdict and plaintext verdict of each predicate |

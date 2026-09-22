@@ -112,7 +112,8 @@ def grouped(num):
     return '-'.join(out)
 
 
-raw = np.pad(car_data['상대번호'].to_numpy(), (0, slot_count - len(car_data)), constant_values=-1)
+raw = np.pad(car_data['Peer_number'].to_numpy(),
+             (0, slot_count - len(car_data)), constant_values=-1)
 
 # Rows with no number (-1) get the prefix 999 so they never match any target.
 segs = np.zeros((len(WIDTHS), slot_count))
@@ -271,4 +272,4 @@ print("Saved: results/result2.txt, results/exp2_niro_match_summary.csv, "
 #=========================#
 sys.stdout = sys.__stdout__
 sys.stderr = sys.__stderr__
-LOG_FILE.close()
+LOG_FILE = open('results/result2.txt', 'w', encoding='utf-8')

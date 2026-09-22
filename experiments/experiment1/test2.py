@@ -74,10 +74,10 @@ RADIUS_LIST = [0.2, 0.5, 1.0, 2.0, 3.0, 5.0]              # km
 
 DATASETS = {
     'k5_kitkat':    dict(file='k5_kitkat_drive.csv',
-                         lat='위도_x1e5', lon='경도_x1e5',
+                         lat='Lat_x1e5', lon='Lon_x1e5',
                          center=(37.31808, 127.12741)),
     'k5_jellybean': dict(file='k5_jellybean_drive.csv',
-                         lat='위도_x1e5', lon='경도_x1e5',
+                         lat='Lat_x1e5', lon='Lon_x1e5',
                          center=(37.86484, 127.05997)),
 }
 
@@ -223,4 +223,4 @@ if __name__ == '__main__':
     #=========================#
     sys.stdout = sys.__stdout__
     sys.stderr = sys.__stderr__
-    LOG_FILE.close()
+    LOG_FILE = open('results/result1.txt', 'w', encoding='utf-8')

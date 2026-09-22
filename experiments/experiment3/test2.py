@@ -71,25 +71,19 @@ row_count = len(car_data)          # 16 recorded rows, the rest is padding
 #=========================#
 ##  3. Do Preprocessing  ##
 #=========================#
-t_real = np.pad(
-    car_data['t_real'].to_numpy(),
-    (0, slot_count - row_count),
-    constant_values=-1
-).astype(float)
-speed = np.pad(
-    car_data['speed'].to_numpy(),
-    (0, slot_count - row_count),
-    constant_values=0
-).astype(float)
+t_rel = np.pad(car_data['T_rel_ms'].to_numpy(),
+               (0, slot_count - row_count), constant_values=-1).astype(float)
+speed = np.pad(car_data['Speed_kmh'].to_numpy(),
+               (0, slot_count - row_count), constant_values=0).astype(float)
 
 # Speed is recorded only for the rows before impact, so the speed predicates
 # are scored on those rows.
-speed_rows = int((car_data['speed'].to_numpy() != -1).sum())
+speed_rows = int((car_data['Speed_kmh'].to_numpy() != -1).sum())
 
 #=====================#
 ##  4. Encrypt Data  ##
 #=====================#
-t_real_ctxt = ho.encrypt(t_real)
+t_rel_ctxt = ho.encrypt(t_rel)
 speed_ctxt = ho.encrypt(speed)
 
 MAX_SPEED = 200.0                  # public normalization constant
@@ -232,4 +226,4 @@ print("Saved: results/result2.txt, results/exp3_avante_summary.csv, "
 #==========================#
 sys.stdout = sys.__stdout__
 sys.stderr = sys.__stderr__
-LOG_FILE.close()
+LOG_FILE = open('results/result3.txt', 'w', encoding='utf-8')

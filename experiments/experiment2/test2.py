@@ -8,6 +8,7 @@ import heaan as hn
 from engine.engine import HEEngine
 from operators.operator import HEOperator
 from operators.forensic_operator import HEForensicTest
+from operators import bscount
 
 
 #=========================#
@@ -174,12 +175,16 @@ for target, why, expect in QUERIES:
     ENC_TIME = time.time() - ENC_START
 
     START_TIME = time.time()
+    bscount.reset()
     match = hft.detect_phone_match(enc_segs, enc_lowers, enc_uppers)
     MATCH_TIME = time.time() - START_TIME
+    MATCH_BS, MATCH_CHEB = bscount.snapshot()
 
     START_TIME = time.time()
+    bscount.reset()
     exists = hft.detect_phone_exists(match, max_count=DEFAULT_MAX_COUNT)
     EXIST_TIME = time.time() - START_TIME
+    EXIST_BS, EXIST_CHEB = bscount.snapshot()
 
     # Plaintext answer, on the stored integers.
     START_TIME = time.time()
@@ -201,12 +206,14 @@ for target, why, expect in QUERIES:
     print(f"{grouped(target):<15}{why:<25}{expect:>4}{answer:>8}  {exist_value:>13.10f}"
           f"{int(plain_hit.sum()):>7}{int(cipher_hit.sum()):>7}{agree:>10}/{slot_count}"
           f"     {zmax:.3e}     {fmt(omin)}"
-          f"{MATCH_TIME:>10.2f}s{EXIST_TIME:>10.2f}s{ENC_TIME*1000:>8.3f}ms{PLAIN_TIME*1000:>10.3f}ms{mark}")
+          f"{MATCH_TIME:>10.2f}s{EXIST_TIME:>10.2f}s{ENC_TIME*1000:>8.3f}ms{PLAIN_TIME*1000:>10.3f}ms"
+          f"  bs {MATCH_BS}/{EXIST_BS}{mark}")
 
     rows.append((target, grouped(target), why, expect, answer, exist_value,
                  int(plain_hit.sum()), int(cipher_hit.sum()),
                  agree, slot_count, zmax, omin, omax,
-                 MATCH_TIME, EXIST_TIME, ENC_TIME, PLAIN_TIME))
+                 MATCH_TIME, EXIST_TIME, ENC_TIME, PLAIN_TIME,
+                 MATCH_BS, MATCH_CHEB, EXIST_BS, EXIST_CHEB))
     match_cache[target] = match
 
     if plain_hit.sum() or target == real[0]:
@@ -249,7 +256,8 @@ for target, expect in PROBES:
 pd.DataFrame(rows, columns=['target', 'grouped', 'description', 'expected', 'answer', 'exist_value',
                             'plain_hits', 'cipher_hits', 'agree', 'total',
                             'zero_max', 'one_min', 'one_max',
-                            'match_sec', 'exist_sec', 'param_enc_sec', 'plain_sec']
+                            'match_sec', 'exist_sec', 'param_enc_sec', 'plain_sec',
+                            'match_bs', 'match_cheb', 'exist_bs', 'exist_cheb']
              ).to_csv('results/exp2_niro_match_summary.csv', index=False)
 pd.DataFrame(sweep, columns=['target', 'max_count', 'expected', 'answer', 'exist_value',
                              'correct', 'exist_sec']

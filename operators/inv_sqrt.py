@@ -1,4 +1,4 @@
-
+from . import bscount
 from engine.engine import HEEngine
 import heaan as hn
 import numpy as np
@@ -103,6 +103,7 @@ class HEStatistics:
             hn_cbsp = hn.math.approx.ChebyshevCoefficients(np.array(cbsp), len(cbsp))
 
             ret = hn.math.approx.evaluate_chebyshev_expansion(self._engine.evaluator(), self._engine.bootstrapping(), new_ct, hn_cbsp, 1.0)
+            bscount.add_chebyshev()
 
             ctxts.append(ret)
         
@@ -151,6 +152,7 @@ class HEStatistics:
             hn_cbsp = hn.math.approx.ChebyshevCoefficients(np.array(cbsp), len(cbsp))
 
             ret = hn.math.approx.evaluate_chebyshev_expansion(self._engine.evaluator(), self._engine.bootstrapping(), new_ct, hn_cbsp, 1.0)
+            bscount.add_chebyshev()
 
             ctxts.append(ret)
         
@@ -174,10 +176,12 @@ class HEStatistics:
                 else:
                     hn_cbsp = hn.math.approx.ChebyshevCoefficients(c, deg)
                 tmp_ct = hn.math.approx.evaluate_chebyshev_expansion(self._engine.evaluator(), self._engine.bootstrapping(), tmp_ct, hn_cbsp, 1.0)
+                bscount.add_chebyshev()
                 if i != len(coeffs) - 1:
                     next_depth = math.ceil(math.log2(len(coeffs[i + 1]) - 1))
                     if tmp_ct.level - next_depth < 3:
                         self._engine.bootstrapping().bootstrap(tmp_ct, tmp_ct)
+                        bscount.add_bootstrap()
             result_ctxt.append(tmp_ct)    
         return HEData(result_ctxt, x.size(), result_ctxt[0].level, x.scale())
 

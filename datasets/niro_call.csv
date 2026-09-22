@@ -1,4 +1,4 @@
-﻿no,타임스탬프,t_ms,t_rel_ms,기기MAC,기기명_id,프로파일_id,통화방향,통화상태,상대번호,상대이름_id,IMEI,ICCID_hi,ICCID_lo,위도_x1e5,경도_x1e5
+no,Timestamp,t_ms,T_rel_ms,Device_MAC,Device_name_id,Profile_id,Call_direction,Call_state,Peer_number,Peer_name_id,IMEI,ICCID_hi,ICCID_lo,Lat_x1e5,Lon_x1e5
 1,2012-01-26 11:31:34,1327577494000,78000,-1,-1,1,-1,-1,-1,-1,-1,-1,-1,-1,-1
 2,2012-01-26 11:31:41,1327577501000,85000,-1,-1,4,-1,-1,-1,-1,-1,-1,-1,-1,-1
 3,2012-01-26 11:31:41,1327577501000,85000,264936744150967,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1

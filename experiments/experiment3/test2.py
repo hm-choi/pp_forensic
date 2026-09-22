@@ -8,6 +8,7 @@ import heaan as hn
 from engine.engine import HEEngine
 from operators.operator import HEOperator
 from operators.forensic_operator import HEForensicTest
+from operators import bscount
 
 
 #=========================#
@@ -113,8 +114,10 @@ print("Query parameters encrypted in", round(PARAM_ENC_TIME * 1000, 3), "ms")
 ##  5. Test the acceleration and deceleration test   ##
 #=====================================================#
 START_TIME = time.time()
+bscount.reset()
 result = hft.detect_speed_increase(speed_ctxt)
 HE_TIME = time.time() - START_TIME
+BS1, CHEB1 = bscount.snapshot()
 
 # np.roll(speed, 1)[i] is speed[i-1], what the one-slot rotation computes.
 START_TIME = time.time()
@@ -130,14 +133,16 @@ print("  cipher", he1[:speed_rows].tolist())
 print("  plain ", plain1[:speed_rows].tolist())
 print("  agree ", agree1, "/", speed_rows)
 z1, n1, x1 = report('speed increase', out1[:speed_rows], plain1[:speed_rows])
-print("  TIME", round(HE_TIME, 2), "s   PLAIN TIME", round(PLAIN_TIME * 1000, 3), "ms")
+print("  TIME", round(HE_TIME, 2), "s   PLAIN TIME", round(PLAIN_TIME * 1000, 3), "ms   BS", BS1, " CHEB", CHEB1)
 
 #===========================================#
 ##  6. Test the Speeding violation check   ##
 #===========================================#
 START_TIME = time.time()
+bscount.reset()
 result2 = hft.detect_overspeed(speed_ctxt, enc_threshold)
 HE_TIME2 = time.time() - START_TIME
+BS2, CHEB2 = bscount.snapshot()
 
 START_TIME = time.time()
 plain2 = (speed > THRESHOLD_SPEED).astype(int)
@@ -152,14 +157,16 @@ print("  cipher", he2[:speed_rows].tolist())
 print("  plain ", plain2[:speed_rows].tolist())
 print("  agree ", agree2, "/", speed_rows)
 z2, n2, x2 = report('overspeed', out2[:speed_rows], plain2[:speed_rows])
-print("  TIME", round(HE_TIME2, 2), "s   PLAIN TIME", round(PLAIN_TIME2 * 1000, 3), "ms")
+print("  TIME", round(HE_TIME2, 2), "s   PLAIN TIME", round(PLAIN_TIME2 * 1000, 3), "ms   BS", BS2, " CHEB", CHEB2)
 
 #=====================================#
 ##  7. Test the time window check    ##
 #=====================================#
 START_TIME = time.time()
+bscount.reset()
 result3 = hft.time_range(t_real_ctxt, enc_start, enc_end, RANGE)
 HE_TIME3 = time.time() - START_TIME
+BS3, CHEB3 = bscount.snapshot()
 
 START_TIME = time.time()
 plain3 = ((t_real > START) & (t_real < END)).astype(int)
@@ -176,7 +183,7 @@ print("  cipher", he3.tolist())
 print("  plain ", plain3[:row_count].tolist())
 print("  agree ", agree3, "/", slot_count, "  (padding included)")
 z3, n3, x3 = report('time window', full3, plain3)
-print("  TIME", round(HE_TIME3, 2), "s   PLAIN TIME", round(PLAIN_TIME3 * 1000, 3), "ms")
+print("  TIME", round(HE_TIME3, 2), "s   PLAIN TIME", round(PLAIN_TIME3 * 1000, 3), "ms   BS", BS3, " CHEB", CHEB3)
 
 #===============================#
 ##  8. Per-row answers         ##
@@ -198,13 +205,13 @@ for i in range(row_count):
 #=====================#
 pd.DataFrame(
     [('speed increase', speed_rows, int(plain1[:speed_rows].sum()),
-      int(he1[:speed_rows].sum()), agree1, speed_rows, z1, n1, x1, HE_TIME, PLAIN_TIME),
+      int(he1[:speed_rows].sum()), agree1, speed_rows, z1, n1, x1, HE_TIME, PLAIN_TIME, BS1, CHEB1, PARAM_ENC_TIME),
      ('overspeed', speed_rows, int(plain2[:speed_rows].sum()),
-      int(he2[:speed_rows].sum()), agree2, speed_rows, z2, n2, x2, HE_TIME2, PLAIN_TIME2),
+      int(he2[:speed_rows].sum()), agree2, speed_rows, z2, n2, x2, HE_TIME2, PLAIN_TIME2, BS2, CHEB2, PARAM_ENC_TIME),
      ('time window', slot_count, int(plain3.sum()),
-      int(he3_all.sum()), agree3, slot_count, z3, n3, x3, HE_TIME3, PLAIN_TIME3)],
+      int(he3_all.sum()), agree3, slot_count, z3, n3, x3, HE_TIME3, PLAIN_TIME3, BS3, CHEB3, PARAM_ENC_TIME)],
     columns=['predicate', 'scored', 'plain', 'cipher', 'agree', 'total',
-             'zero_max', 'one_min', 'one_max', 'he_sec', 'plain_sec']
+             'zero_max', 'one_min', 'one_max', 'he_sec', 'plain_sec', 'bootstraps', 'chebyshev', 'param_enc_sec']
 ).to_csv('results/exp3_avante_summary.csv', index=False)
 
 pd.DataFrame({

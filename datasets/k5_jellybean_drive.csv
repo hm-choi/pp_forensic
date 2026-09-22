@@ -1,4 +1,4 @@
-﻿no,타임스탬프,t_ms,t_rel_ms,시동ON_t_ms,시동OFF_t_ms,출발_t_ms,위도_x1e5,경도_x1e5,고도_m,속도_kmh,방위_deg,기기MAC,프로파일_id
+no,Timestamp,t_ms,T_rel_ms,Ignition_on_t_ms,Ignition_off_t_ms,Departure_t_ms,Lat_x1e5,Lon_x1e5,Altitude_m,Speed_kmh,Heading_deg,Device_MAC,Profile_id
 1,2022-04-01 01:18:57,1648743537000,0,-1,-1,-1,-1,-1,-1,-1,-1,-1,1
 2,2022-04-01 01:18:57,1648743537000,0,-1,-1,-1,3788939,12706406,0,0,231,-1,-1
 3,2022-04-01 01:18:57,1648743537000,0,-1,1648738797000,1648738837000,-1,-1,-1,-1,-1,-1,-1

@@ -1,4 +1,18 @@
 __pycache__/
-*.pyc__pycache__/
 *.pyc
-*.bak
+
+# experiment output
+results/
+runs/
+results_all/
+aggregated/
+*.log
+
+# local backups and one-off patch scripts
+datasets_backup/
+operators_backup/
+experiments/results_before_refactor/
+patch_bscount.py
+patch_experiments.py
+fix_invsqrt.py
+probe_bs.py

@@ -3,6 +3,7 @@ import heaan as hn
 import numpy as np
 from hedata.data import HEData
 import math 
+from . import bscount
 
 class HEOperator:
     def __init__(self, engine:HEEngine):
@@ -329,6 +330,7 @@ class HEOperator:
             print("bootstrapping!!")
             for i in range(len(data.ciphertexts())):
                 self._engine.bootstrapping().bootstrap(data.ciphertexts()[i], data.ciphertexts()[i])  
+                bscount.add_bootstrap()
 
         
         return HEData(data.ciphertexts(), data.size(), data.ciphertexts()[0].level, data.scale())

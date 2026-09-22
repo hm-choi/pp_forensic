@@ -8,6 +8,7 @@ import heaan as hn
 from engine.engine import HEEngine
 from operators.operator import HEOperator
 from operators.forensic_operator import HEForensicTest
+from operators import bscount
 from tm import to_tm
 
 
@@ -156,10 +157,12 @@ def run(tag):
         ENC_TIME = time.time() - ENC_START
 
         START_TIME = time.time()
+        bscount.reset()
         result = hft.compute_geofence_score(x_ctxt, y_ctxt,
                                             enc_center_x, enc_center_y,
                                             enc_radius)
         HE_TIME = time.time() - START_TIME
+        N_BS, N_CHEB = bscount.snapshot()
 
         START_TIME = time.time()
         plain = (dist_km <= radius).astype(int)
@@ -173,10 +176,12 @@ def run(tag):
 
         print(f"  {mark}    {radius:6.1f} km   {int(plain.sum()):6d}   {int(cipher.sum()):6d}   "
               f"{agree}/{slot_count}     {zmax:.3e}     {fmt(omin)}   {fmt(omax)}   "
-              f"{HE_TIME:6.2f}s   {ENC_TIME*1000:7.3f}ms   {PLAIN_TIME*1000:8.3f}ms")
+              f"{HE_TIME:6.2f}s   {ENC_TIME*1000:7.3f}ms   {PLAIN_TIME*1000:8.3f}ms   "
+              f"bs {N_BS:2d}  cheb {N_CHEB:3d}")
 
         rows.append((tag, radius, int(plain.sum()), int(cipher.sum()),
-                     agree, slot_count, zmax, omin, omax, HE_TIME, ENC_TIME, PLAIN_TIME))
+                     agree, slot_count, zmax, omin, omax, HE_TIME, ENC_TIME, PLAIN_TIME,
+                     N_BS, N_CHEB))
 
         dump_slots(out, plain)
         for i in keep:
@@ -187,7 +192,7 @@ def run(tag):
     #=====================#
     pd.DataFrame(rows, columns=['dataset', 'radius', 'plain', 'cipher', 'agree', 'total',
                                 'zero_max', 'one_min', 'one_max',
-                                'he_sec', 'param_enc_sec', 'plain_sec']
+                                'he_sec', 'param_enc_sec', 'plain_sec', 'bootstraps', 'chebyshev']
                  ).to_csv('results/exp1_' + tag + '_summary.csv', index=False)
     pd.DataFrame(slots, columns=['dataset', 'radius', 'slot', 'dist_km', 'plain', 'decrypted']
                  ).to_csv('results/exp1_' + tag + '_slots.csv', index=False)
@@ -204,16 +209,17 @@ if __name__ == '__main__':
     #==========================#
     pd.DataFrame(allrows, columns=['dataset', 'radius', 'plain', 'cipher', 'agree', 'total',
                                    'zero_max', 'one_min', 'one_max',
-                                   'he_sec', 'param_enc_sec', 'plain_sec']
+                                   'he_sec', 'param_enc_sec', 'plain_sec', 'bootstraps', 'chebyshev']
                  ).to_csv('results/exp1_all_summary.csv', index=False)
 
     print("\nSUMMARY")
     bad = 0
-    for tag, radius, plain, cipher, agree, total, zmax, omin, omax, he_sec, enc_sec, plain_sec in allrows:
+    for tag, radius, plain, cipher, agree, total, zmax, omin, omax, he_sec, enc_sec, plain_sec, n_bs, n_cheb in allrows:
         ok = agree == total
         bad += (not ok)
         print(f"  {tag:<14}{radius:>7.1f} km  plain {plain:>6}  cipher {cipher:>6}   "
-              f"{'match' if ok else 'mismatch'}   {he_sec:.2f}s / {plain_sec*1000:.3f}ms")
+              f"{'match' if ok else 'mismatch'}   {he_sec:.2f}s / {plain_sec*1000:.3f}ms   "
+              f"bs {n_bs}  cheb {n_cheb}")
     print("\n", len(allrows), "queries in total,", bad, "mismatched")
     print("Saved: results/result2.txt, results/exp1_<dataset>_summary.csv, "
           "results/exp1_all_summary.csv")

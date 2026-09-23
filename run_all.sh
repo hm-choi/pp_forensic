@@ -7,7 +7,7 @@ for d in experiment3 experiment1 experiment2; do
     echo "==================== $d ===================="
     date
     cd /pp_forensic/experiments/$d
-    python3 -W ignore -u test2.py
+    python3 -W ignore -u test.py
 done
 
 echo ""

@@ -1,17 +1,17 @@
+"""Composite sign and step function on CKKS ciphertexts.
+
+Adapted from the PP-STAT implementation by Hyunmin Choi, which was itself
+ported from an earlier Go implementation.
+Reference: H. Choi, "PP-STAT: An Efficient Privacy-Preserving Statistical
+Analysis Framework Using Homomorphic Encryption," CIKM '25.
+"""
 from . import bscount
 from engine.engine import HEEngine
 import heaan as hn
 import numpy as np
 from hedata.data import HEData
 from operators.operator import HEOperator
-import math, json
-
-SIGN_DATA_PPSTAT = [
-    [0.0, 0.6390288304082614, 0.0, -0.21980608429103932, 0.0, 0.1414400337738291, 0.0, -0.5606627743680413],
-    [0.0, 0.6371463326157922, 0.0, -0.21380325827579392, 0.0, 0.13004393762977677, 0.0, -0.09488428074246866, 0.0, 0.07604178502209895, 0.0, -0.06477148515021864, 0.0, 0.05779044360437681, 0.0, -0.5275634049964796],
-    [0.0, 0.6371468493346175, 0.0, -0.21380342955981532, 0.0, 0.13004403924162435, 0.0, -0.09488435206009798, 0.0, 0.07604183915280832, 0.0, -0.06477152803371908, 0.0, 0.05779047842540584, 0.0, -0.5275630145730114],
-    [0.0, 1.2734862773297655, 0.0, -0.42515524234253814, 0.0, 0.25589093343467156, 0.0, -0.1836449020797226, 0.0, 0.14374882333912232, 0.0, -0.11856926750825473, 0.0, 0.10132742430142789, 0.0, -0.08886318390233084, 0.0, 0.07950707992755427, 0.0, -0.07229645059378168, 0.0, 0.06663972992977957, 0.0, -0.06215617007060851, 0.0, 0.05859285562339639, 0.0, -0.055779073936309355, 0.0, 0.053600206686888685, 0.0, -1.0262829544919159]
-]
+import math
 
 SIGN_DATA_PPSTAT = [
 	[0, 0.639028938435711219, 0, -0.219806118878047092, 0, 0.141440053455946451, 0, -0.560662696277302517],
@@ -29,135 +29,6 @@ class HEStatistics:
         self._engine = engine 
         self._ho = HEOperator(engine)
   
-    def he_inv_sqrt(self, ct:HEData, degree=6):
-        if ct.level() < degree+3:
-            self._ho.do_bootstrapping(ct, 11)
-        tmp = self.chebyshev_inv_sqrt(ct, B = 2, degree=degree)
-        tmp = self._ho.do_bootstrapping(tmp, 11)
-        return self.he_newtons_method(ct, tmp, 7)
-
-    def he_newtons_method(self, x:HEData, y:HEData, iteration:int=10):
-        N = 2.0
-
-        x = self._ho.mult_const(x, 0.5)
-        if x.level() <= 4:
-            x = self._ho.do_bootstrapping(x, 11)
-
-        tmp_a = self._ho.copy_new(x)
-        tmp_b = self._ho.copy_new(y)
-
-        for iter in range(iteration):
-            if y.level() <= 4:
-                y = self._ho.do_bootstrapping(y, 11)
-
-            tmp_a = self._ho.mult_const(y, (N+1)/(N))
-            tmp_b = self._ho.mult(x, y)
-
-            y_sqr = self._ho.mult(y, y)
-
-            tmp_b = self._ho.mult(tmp_b, y_sqr)
-            y = self._ho.sub(tmp_a, tmp_b)
-        return y
- 
-
-    def chebyshev_inv_sqrt(self, ct:HEData, B = 1, degree:int=6):
-        mode = 3
-        if degree == 9:
-            with open("hmchoi2/coefficients/Cbsb510.json", "r") as f:
-                data = json.load(f)
-        elif degree == 8:
-            with open("hmchoi2/coefficients/Cbsp254.json", "r") as f:
-                data = json.load(f)
-        elif degree == 7:
-            with open("hmchoi2/coefficients/Cbsp126.json", "r") as f:
-                data = json.load(f)
-        elif degree == 6:
-            with open("hmchoi2/coefficients/Cbsp62.json", "r") as f:
-                data = json.load(f)
-        elif degree == 5:
-            with open("hmchoi2/coefficients/Cbsp30.json", "r") as f:
-                data = json.load(f)
-        elif degree == 4:
-            with open("hmchoi2/coefficients/Cbsp14.json", "r") as f:
-                data = json.load(f)
-
-
-        ctxts = []
-        for c in ct.ciphertexts():
-
-            new_ct = hn.Ciphertext(c)
-
-            if mode == 1:
-                if degree == 8:
-                    self._engine.evaluator().mult(ct, 2/B, new_ct)
-                cbsp = [np.float64(x[0]) / ((B/2) ** (1/2)) for x in data]
-            elif mode == 2:
-                cbsp = [np.float64(x[0]) / (B ** (1/2)) for x in data]
-            elif mode == 3:
-                cbsp = [np.float64(x[0]) for x in data]
-            else:
-                return None
-
-            self._engine.evaluator().sub(new_ct, 1, new_ct)
-            
-            hn_cbsp = hn.math.approx.ChebyshevCoefficients(np.array(cbsp), len(cbsp))
-
-            ret = hn.math.approx.evaluate_chebyshev_expansion(self._engine.evaluator(), self._engine.bootstrapping(), new_ct, hn_cbsp, 1.0)
-            bscount.add_chebyshev()
-
-            ctxts.append(ret)
-        
-        return HEData(ctxts, ct.size(), ret.level, ct.scale())
- 
-    def chebyshev_sqrt(self, ct:HEData, B = 1, degree:int=8):
-        mode = 3
-        if degree == 9:
-            with open("hmchoi2/coefficients/Sqrt_Cheb510.json", "r") as f:
-                data = json.load(f)
-        elif degree == 8:
-            with open("hmchoi2/coefficients/Sqrt_Cheb254.json", "r") as f:
-                data = json.load(f)
-        elif degree == 7:
-            with open("hmchoi2/coefficients/Sqrt_Cheb126.json", "r") as f:
-                data = json.load(f)
-        elif degree == 6:
-            with open("hmchoi2/coefficients/Sqrt_Cheb62.json", "r") as f:
-                data = json.load(f)
-        elif degree == 5:
-            with open("hmchoi2/coefficients/Sqrt_Cheb30.json", "r") as f:
-                data = json.load(f)
-        # elif degree == 4:
-        #     with open("hmchoi2/coefficients/Cbsp14.json", "r") as f:
-        #         data = json.load(f)
-
-
-        ctxts = []
-        for c in ct.ciphertexts():
-
-            new_ct = hn.Ciphertext(c)
-            mode = 3
-            if mode == 1:
-                if degree == 8:
-                    self._engine.evaluator().mult(ct, 2/B, new_ct)
-                cbsp = [np.float64(x[0]) / ((B/2) ** (1/2)) for x in data]
-            elif mode == 2:
-                cbsp = [np.float64(x[0]) / (B ** (1/2)) for x in data]
-            elif mode == 3:
-                cbsp = [np.float64(x[0]) for x in data]
-            else:
-                return None
-
-            self._engine.evaluator().sub(new_ct, 1, new_ct)
-            
-            hn_cbsp = hn.math.approx.ChebyshevCoefficients(np.array(cbsp), len(cbsp))
-
-            ret = hn.math.approx.evaluate_chebyshev_expansion(self._engine.evaluator(), self._engine.bootstrapping(), new_ct, hn_cbsp, 1.0)
-            bscount.add_chebyshev()
-
-            ctxts.append(ret)
-        
-        return HEData(ctxts, ct.size(), ret.level, ct.scale())
-
     def he_sign(self, x:HEData):
         if x is None:
             raise ValueError("ciphertext is None")
@@ -190,40 +61,3 @@ class HEStatistics:
         signed = self.he_sign(x)
         x = self._ho.mult_const(signed, 0.5)
         return self._ho.add_const(x, 0.5)
-
-
-    def inv_sqrt_without_bts(self, x:HEData, y:HEData, iteration:int=10):
-        N = 2.0
-    
-        x = self._ho.mult_const(x, 0.5)
-        if x.level() <= 4:
-            tmp = self._ho.decrypt(x, True)
-            x = self._ho.encrypt(tmp)
-
-
-        tmp_a = self._ho.copy_new(x)
-        tmp_b = self._ho.copy_new(y)
-
-        for iter in range(iteration):
-            if y.level() < 4:
-                tmp = self._ho.decrypt(y, True)
-                y = self._ho.encrypt(tmp)
-
-            tmp_a = self._ho.mult_const(y, (N+1)/(N))
-            tmp_b = self._ho.mult(x, y)
-
-            y_sqr = self._ho.mult(y, y)
-
-            tmp_b = self._ho.mult(tmp_b, y_sqr)
-            y = self._ho.sub(tmp_a, tmp_b)
-        return y
-
-    def inv_without_bts(self, x:HEData, y:HEData, iteration:int=10):
-        inv_sqrt = self.inv_sqrt_without_bts(x, y, iteration)
-        if inv_sqrt.level() < 4:
-            tmp = self._ho.decrypt(inv_sqrt, True)
-            inv_sqrt = self._ho.encrypt(tmp)
-        inv = self._ho.mult(inv_sqrt, inv_sqrt)
-        return inv
-
- 

@@ -1,3 +1,10 @@
+"""HEaaN engine setup: context, keys and bootstrapping.
+
+Adapted from the PP-STAT implementation by Hyunmin Choi, which was itself
+ported from an earlier Go implementation.
+Reference: H. Choi, "PP-STAT: An Efficient Privacy-Preserving Statistical
+Analysis Framework Using Homomorphic Encryption," CIKM '25.
+"""
 import heaan as hn
 import numpy as np
 import os
@@ -7,12 +14,12 @@ class HEEngine:
     def __init__(
         self,
         params=hn.ParameterPreset.FGb,
-        device_type="cpu",       # "cpu" 또는 "gpu"
+        device_type="cpu",       # "cpu" or "gpu"
         device_id=0,
         log_slots=15,
         setting_root="/root/heaan_setting/",
         separate_keys_by_slots=False,
-        warmup_bootstrap=False,  # CPU에서는 우선 False 권장
+        warmup_bootstrap=False,  # False is recommended on CPU
     ):
         self._params = params
         self._device_type = device_type.lower()
@@ -112,7 +119,7 @@ class HEEngine:
             )
 
         else:
-            # HEaaN 배포 버전에 따라 두 번째 인자가 선택적일 수 있음
+            # The second argument may be optional depending on the HEaaN release
             try:
                 self._context = hn.make_context(
                     self._params
@@ -123,7 +130,7 @@ class HEEngine:
                     set(),
                 )
 
-            # CPU 객체는 기본 device에 그대로 둠
+            # CPU objects stay on the default device
             self._dt = None
 
         os.makedirs(
@@ -156,11 +163,11 @@ class HEEngine:
                 self._key_dir_path,
             )
 
-            print("Key 로드 완료")
+            print("Key loaded")
 
         except Exception as exc:
-            print("Key 로드 실패:", repr(exc))
-            print("새 키를 생성합니다.")
+            print("Key load failed:", repr(exc))
+            print("Generating new keys.")
 
             self._sk = hn.SecretKey(
                 self._context
@@ -182,10 +189,10 @@ class HEEngine:
 
             self._pk = keygen.keypack
 
-            print("Key 생성 완료")
+            print("Key generation done")
 
     def _init_operators(self):
-        # GPU 모드에서만 객체를 GPU로 이동
+        # Move objects to GPU only in GPU mode
         if self.is_gpu():
             self._sk.to(self._dt)
             self._pk.to(self._dt)
@@ -214,7 +221,7 @@ class HEEngine:
             )
         )
 
-        # GPU 모드에서만 Message 이동
+        # Move the Message only in GPU mode
         if self.is_gpu():
             msg.to(self._dt)
 
@@ -223,7 +230,7 @@ class HEEngine:
         )
 
         print(
-            f"Warm-up encrypt 시작 "
+            f"Warm-up encrypt start "
             f"[{self._device_type.upper()}]"
         )
 
@@ -233,12 +240,12 @@ class HEEngine:
             ctxt,
         )
 
-        print("Warm-up encrypt 완료")
-        print("Warm-up bootstrap 시작")
+        print("Warm-up encrypt done")
+        print("Warm-up bootstrap start")
 
         self._bts.bootstrap(
             ctxt,
             ctxt,
         )
 
-        print("Warm-up bootstrap 완료")
+        print("Warm-up bootstrap done")

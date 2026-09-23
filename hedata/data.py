@@ -1,3 +1,10 @@
+"""Container holding one or more CKKS ciphertexts.
+
+Adapted from the PP-STAT implementation by Hyunmin Choi, which was itself
+ported from an earlier Go implementation.
+Reference: H. Choi, "PP-STAT: An Efficient Privacy-Preserving Statistical
+Analysis Framework Using Homomorphic Encryption," CIKM '25.
+"""
 import heaan as hn
 
 class HEData:

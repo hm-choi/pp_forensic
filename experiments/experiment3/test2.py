@@ -164,12 +164,12 @@ print("  TIME", round(HE_TIME2, 2), "s   PLAIN TIME", round(PLAIN_TIME2 * 1000, 
 #=====================================#
 START_TIME = time.time()
 bscount.reset()
-result3 = hft.time_range(t_real_ctxt, enc_start, enc_end, RANGE)
+result3 = hft.time_range(t_rel_ctxt, enc_start, enc_end, RANGE)
 HE_TIME3 = time.time() - START_TIME
 BS3, CHEB3 = bscount.snapshot()
 
 START_TIME = time.time()
-plain3 = ((t_real > START) & (t_real < END)).astype(int)
+plain3 = ((t_rel > START) & (t_rel < END)).astype(int)
 PLAIN_TIME3 = time.time() - START_TIME
 
 full3 = np.array(ho.decrypt(result3))[:slot_count]
@@ -189,7 +189,7 @@ print("  TIME", round(HE_TIME3, 2), "s   PLAIN TIME", round(PLAIN_TIME3 * 1000, 
 ##  8. Per-row answers         ##
 #===============================#
 # A dot marks a row with no recorded speed.
-print("\nrow  t_real  speed |    incr out  p |     over out  p |      win out  p")
+print("\nrow  t_rel  speed |    incr out  p |     over out  p |      win out  p")
 print("-" * 74)
 for i in range(row_count):
     if i < speed_rows:
@@ -197,7 +197,7 @@ for i in range(row_count):
         c2, p2 = f"{out2[i]:.10f}", str(plain2[i])
     else:
         c1 = p1 = c2 = p2 = '.'
-    print(f"{i:>3}{int(t_real[i]):>8}{int(speed[i]):>7} |"
+    print(f"{i:>3}{int(t_rel[i]):>8}{int(speed[i]):>7} |"
           f"{c1:>14}{p1:>3} |{c2:>14}{p2:>3} |{out3[i]:>14.10f}{plain3[i]:>3}")
 
 #=====================#
@@ -216,7 +216,7 @@ pd.DataFrame(
 
 pd.DataFrame({
     'row': np.arange(row_count),
-    't_real': t_real[:row_count].astype(int),
+    't_rel': t_rel[:row_count].astype(int),
     'speed': speed[:row_count].astype(int),
     'incr_out': out1, 'incr_cipher': he1, 'incr_plain': plain1[:row_count],
     'over_out': out2, 'over_cipher': he2, 'over_plain': plain2[:row_count],

@@ -1,7 +1,8 @@
-import pathlib, pandas as pd, numpy as np
+import pathlib, pandas as pd
 
-ROOT = pathlib.Path('/home/ubuntu/pp_forensic/runs')
-OUT = pathlib.Path('/home/ubuntu/pp_forensic/aggregated')
+BASE = pathlib.Path(__file__).resolve().parent
+ROOT = BASE / 'runs'
+OUT = BASE / 'aggregated'
 OUT.mkdir(exist_ok=True)
 
 SPECS = [

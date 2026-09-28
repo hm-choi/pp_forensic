@@ -4,8 +4,10 @@ __pycache__/
 # experiment output
 results/
 runs/
+runs_sorento/
 results_all/
 aggregated/
+aggregated_sorento/
 *.log
 
 # local backups and one-off patch scripts

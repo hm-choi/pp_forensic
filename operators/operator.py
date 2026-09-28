@@ -307,20 +307,55 @@ class HEOperator:
 
     def rotation(self, ct: HEData, rot_steps: int) -> HEData:
         size = ct.size()
-        level = ct.level()
         scale = ct.scale()
 
-        result_ctxts = []
+        ctxts = ct.ciphertexts()
+        n = len(ctxts)
+        num_slots = self._engine.num_slots()
+
         evt = self._engine.evaluator()
         context = self._engine.context()
 
-        for c in ct.ciphertexts():
+        if n == 1:
             res_ct = hn.Ciphertext(context)
-            # HEaaN uses left_rotate (or right_rotate)
-            evt.left_rotate(c, rot_steps, res_ct) 
+            # HEaaN uses left_rotate (or right_rotate); normalize a negative
+            # rot_steps into [0, num_slots) since left_rotate expects that.
+            evt.left_rotate(ctxts[0], rot_steps % num_slots, res_ct)
+            return HEData(ciphertexts=[res_ct], size=size, level=ct.level(), scale=scale)
+
+        # A rotation can cross a chunk boundary, so each output chunk is stitched
+        # from two rotated source chunks using 0/1 masks.
+        q, r = divmod(rot_steps % (n * num_slots), num_slots)
+
+        if r == 0:
+            result_ctxts = []
+            for j in range(n):
+                res_ct = hn.Ciphertext(context)
+                evt.left_rotate(ctxts[(j + q) % n], 0, res_ct)
+                result_ctxts.append(res_ct)
+            return HEData(ciphertexts=result_ctxts, size=size, level=ct.level(), scale=scale)
+
+        low_mask = hn.Message(np.array([1.0] * (num_slots - r) + [0.0] * r, dtype=np.float64))
+        high_mask = hn.Message(np.array([0.0] * (num_slots - r) + [1.0] * r, dtype=np.float64))
+
+        result_ctxts = []
+        for j in range(n):
+            rot_a = hn.Ciphertext(context)
+            evt.left_rotate(ctxts[(j + q) % n], r, rot_a)
+            masked_a = hn.Ciphertext(context)
+            evt.mult(rot_a, low_mask, masked_a)
+
+            rot_b = hn.Ciphertext(context)
+            evt.left_rotate(ctxts[(j + q + 1) % n], r, rot_b)
+            masked_b = hn.Ciphertext(context)
+            evt.mult(rot_b, high_mask, masked_b)
+
+            res_ct = hn.Ciphertext(context)
+            evt.add(masked_a, masked_b, res_ct)
             result_ctxts.append(res_ct)
 
-        return HEData(ciphertexts=result_ctxts, size=size, level=level, scale=scale)
+        # The mask multiplication consumes a level, like mult_const.
+        return HEData(ciphertexts=result_ctxts, size=size, level=ct.level() - 1, scale=scale)
 
     def do_bootstrapping(self, data: HEData, level: int) -> HEData:
         if data.level() <= level:

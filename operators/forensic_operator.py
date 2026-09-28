@@ -13,10 +13,12 @@ class HEForensicTest:
         self.__ho = HEOperator(engine)
         self.__hs = HEStatistics(engine)
 
-    def encrypt_param(self, value):
-        """Encrypt one query parameter, broadcast to every slot."""
+    def encrypt_param(self, value, size=None):
+        """Encrypt one query parameter, broadcast to `size` slots (one chunk by default)."""
         ho = self.__ho
-        arr = np.full(self._engine.num_slots(), float(value), dtype=np.float64)
+        if size is None:
+            size = self._engine.num_slots()
+        arr = np.full(size, float(value), dtype=np.float64)
         return ho.encrypt(arr)
 
     def detect_speed_increase(self, speed_data, max_speed=200):
@@ -27,7 +29,9 @@ class HEForensicTest:
         ho = self.__ho
         hs = self.__hs
         norm_speed = ho.mult_const(speed_data, 1/max_speed)
-        speed_ctxt = ho.rotation(norm_speed, 32768-1)
+        # -1 (not a hardcoded slot count) so this also lines up correctly
+        # across chunks when speed_data spans more than one ciphertext.
+        speed_ctxt = ho.rotation(norm_speed, -1)
         speed_ctxt = ho.sub(norm_speed, speed_ctxt)
         return hs.he_step(speed_ctxt)
 

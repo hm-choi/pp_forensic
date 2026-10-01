@@ -107,9 +107,9 @@ Logs collected from vehicles operated by the authors.
 
 Column names follow the notation used in the paper. Coordinates are stored as integers scaled by 100,000, so 3731808 means 37.31808 degrees.
 
-## Before public release
+## Identifier substitution
 
-The call history carries subscriber and device identifiers. These must be substituted before the datasets are published, and the substitution has to preserve digit length and group structure so that the encoding and the reported results stay valid. This is open at the time of writing.
+Subscriber and device identifiers in `niro_call.csv` (phone numbers, Bluetooth MAC address, IMEI, ICCID) and its single location fix were substituted after the experiments were run. Each phone number keeps its first and last digit groups, and only the middle group is replaced, one-to-one, so every match count and every decision in Experiment 2 is unchanged. Rerunning Experiment 2 on the substituted data can change the decrypted values only in their last digits. The other identifiers and the location fix are not used by any experiment.
 
 ## Attribution
 

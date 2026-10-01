@@ -20,3 +20,5 @@ fix_invsqrt.py
 probe_bs.py
 runs_scaling/
 aggregated_scaling/
+experiments/run_all*.log
+experiments/experiment_excluded_sorento/

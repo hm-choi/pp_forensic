@@ -70,13 +70,13 @@ digit changed in the first and middle group, and one number that never appears.
 
 | Query | Description | Expected | Answer | Plain hits | Cipher hits | Agreement |
 |---|---|---|---|---|---|---|
-| 010-2013-2924 | original | 1 | 1 | 12 | 12 | 32768/32768 |
+| 010-5000-2924 | original | 1 | 1 | 12 | 12 | 32768/32768 |
 | 010-2013-2925 | last group differs | 0 | 0 | 0 | 0 | 32768/32768 |
-| 010-6574-9080 | original | 1 | 1 | 3 | 3 | 32768/32768 |
+| 010-5100-9080 | original | 1 | 1 | 3 | 3 | 32768/32768 |
 | 010-6574-9081 | last group differs | 0 | 0 | 0 | 0 | 32768/32768 |
-| 010-2673-1582 | original | 1 | 1 | 2 | 2 | 32768/32768 |
+| 010-5200-1582 | original | 1 | 1 | 2 | 2 | 32768/32768 |
 | 010-2673-1583 | last group differs | 0 | 0 | 0 | 0 | 32768/32768 |
-| 006-8752-4858 | original | 1 | 1 | 2 | 2 | 32768/32768 |
+| 006-5300-4858 | original | 1 | 1 | 2 | 2 | 32768/32768 |
 | 006-8752-4859 | last group differs | 0 | 0 | 0 | 0 | 32768/32768 |
 | 020-2013-2924 | first group differs | 0 | 0 | 0 | 0 | 32768/32768 |
 | 010-2023-2924 | middle group differs | 0 | 0 | 0 | 0 | 32768/32768 |
@@ -93,7 +93,7 @@ both.
 
 The declared bound behaves the same way across two orders of magnitude.
 
-| C | 010-2013-2924 (present) | 010-1111-2222 (absent) |
+| C | 010-5000-2924 (present) | 010-1111-2222 (absent) |
 |---|---|---|
 | 32 | 1 | 0 |
 | 256 | 1 | 0 |

@@ -105,7 +105,7 @@ def bump(num, i):
 
 
 def grouped(num):
-    """Write a number as its digit groups, e.g. 010-2013-2924."""
+    """Write a number as its digit groups, e.g. 010-5000-2924."""
     out, pos = [], 0
     for w in WIDTHS:
         out.append(num[pos:pos + w])

@@ -1,0 +1,15 @@
+exp1_all_summary.csv -> 30 runs
+   all decision columns identical across runs
+exp2_niro_match_summary.csv -> 30 runs
+   WARNING: these varied across runs: ['exist_value']
+exp3_avante_summary.csv -> 30 runs
+   all decision columns identical across runs
+
+written to /content/pp_forensic/aggregated
+ 
+ ****************************************************************************** 
+ *                                                                            * 
+ *               STARTING cba72948-545f-3cab-9ee3-f6078a90bf4e                * 
+ *                                                                            * 
+ ****************************************************************************** 
+ executing: bash

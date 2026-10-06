@@ -23,7 +23,7 @@ class HEForensicTest:
 
     def detect_speed_increase(self, speed_data, max_speed=200):
         """
-        Detect whether vehicle speed increased between consecutive timestamps.
+        Speed-increase predicate: Eq. (1) on the difference between adjacent slots.
         No query parameter: the log is compared against itself.
         """
         ho = self.__ho
@@ -37,8 +37,8 @@ class HEForensicTest:
 
     def detect_overspeed(self, speed_data, enc_threshold, max_speed=200):
         """
-        Mark slots above the threshold. enc_threshold holds the threshold in
-        km/h. The subtraction comes before the normalization so that both
+        Speed-threshold predicate, Eq. (1). Marks slots above the threshold;
+        enc_threshold holds the threshold in km/h. The subtraction comes before the normalization so that both
         operands are freshly encrypted and sit at the same level.
         """
         ho = self.__ho
@@ -49,8 +49,8 @@ class HEForensicTest:
 
     def time_range(self, time_ctxt, enc_start, enc_end, range):
         """
-        Mark slots inside the observation window. Both bounds are ciphertexts;
-        range is the public normalization width.
+        Time-window predicate, Eq. (4): two step-function calls, one per bound.
+        Both bounds are ciphertexts; range is the public normalization constant S.
         """
         ho = self.__ho
         hs = self.__hs
@@ -68,7 +68,7 @@ class HEForensicTest:
     def compute_geofence_score(self, enc_x, enc_y,
                                enc_center_x, enc_center_y, enc_radius):
         """
-        Mark slots inside the query circle. Coordinates are EPSG:5186 metres
+        Radius predicate, Eq. (3). Marks slots inside the query circle. Coordinates are EPSG:5186 metres
         divided by the public normalization width, both done in the clear
         before encryption, so the circuit holds no latitude dependent constant.
         The radius is normalized the same way and squared inside the circuit,
@@ -91,7 +91,8 @@ class HEForensicTest:
 
     def detect_phone_match(self, enc_segs, enc_lowers, enc_uppers):
         """
-        Mark slots whose phone number matches the target in every group.
+        Phone-number match, Eq. (4) on each of the three digit groups (six
+        step-function calls). Marks slots that match the target in every group.
         The bounds arrive as ciphertexts, so the target is never in the clear.
         """
         ho = self.__ho
@@ -117,8 +118,9 @@ class HEForensicTest:
 
     def detect_phone_exists(self, match_ctxt, max_count=32):
         """
-        Return 1 if at least one slot matched, 0 otherwise.
-        max_count is a public bound on the match count, declared in the clear.
+        Existence circuit (Section 4.4): sums the match decisions over all slots
+        and applies Eq. (1) once, so the response is a single bit.
+        max_count is the public bound C on the number of matches.
         """
         ho = self.__ho
         hs = self.__hs

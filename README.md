@@ -1,172 +1,138 @@
 # PP-Forensics
 
-Privacy-preserving forensic analytics over vehicle software platform logs, built on CKKS homomorphic encryption.
+Implementation and experiment results of *PP-Forensics: Privacy-Preserving Forensic Analytics Framework for Heterogeneous Vehicle Software Platforms* (ACM SAC 2027).
 
-An investigator asks a question about a vehicle log that a custodian holds. The custodian evaluates the question on ciphertext and returns a single bit. The custodian never learns what was asked, and the investigator never receives the log. Query parameters are encrypted under the investigator's key, so a warrant's location, threshold, time window or phone number stays hidden as well.
-
-This repository holds the homomorphic-encryption half of the work: the predicate circuits, the experiments that validate them, and the measurement harness.
+An investigator asks a custodian, a third party that holds vehicle logs in plaintext, whether any record satisfies a forensic predicate. The custodian converts its records into a feature matrix, encrypts it under the investigator's public key, and evaluates the predicate over ciphertexts. The query parameters (a phone number, a center and a radius, a speed threshold, or the two ends of a time window) also arrive encrypted. The investigator decrypts a single bit, and the custodian learns neither the decision nor the query parameters.
 
 ## Layout
 
 ```
-engine/        HEaaN context, key management, bootstrapping
-hedata/        Container holding one or more CKKS ciphertexts
-operators/     Homomorphic operators, composite sign and step function,
-               forensic predicates, bootstrapping counters
-datasets/      Vehicle logs used by the experiments
-experiments/   One folder per experiment
-colab/         Scripts for the GPU runs on a Colab A100 (udocker)
-tools/         Post-processing of the GPU runs
+engine/        HEaaN context, keys and bootstrapping
+hedata/        Container for one or more CKKS ciphertexts
+operators/     Homomorphic operators, step function, forensic predicates,
+               bootstrapping counter
+datasets/      Feature matrices of the four vehicles
+experiments/   experiment1 to experiment4, one folder per experiment
+colab/         Scripts that ran all experiments on the A100
+tools/         Post-processing of the A100 runs
+results/       A100 results reported in the paper
+aggregate.py   Aggregates the 30 runs of Experiments 1 to 3
 ```
-
-`operators/forensic_operator.py` is the entry point. Every predicate the experiments evaluate goes through it.
 
 ## Experiments
 
-| Folder | Subject | Data |
-| --- | --- | --- |
-| `experiment1` | Radius predicate on GPS coordinates | Kia K5 infotainment, two platform versions |
-| `experiment2` | Phone-number match and existence | Kia Niro Bluetooth call history |
-| `experiment3` | Speed increase, speed threshold, time window | Hyundai Avante CN7 event data recorder |
-| `experiment_scaling` | Runtime by number of ciphertexts (1, 2, 4, 8, 32; up to 1,048,576 rows) | Data of Experiments 1 to 3, tiled |
+| Folder | Section of the paper | Predicates | Data |
+| --- | --- | --- | --- |
+| `experiment1` | 6.2 Experiment 1: Location History (Table 6) | Radius | K5 JF (2017), K5 DL3 (2020) |
+| `experiment2` | 6.3 Experiment 2: Call History (Table 7) | Phone-number match, existence circuit | Niro (2018) |
+| `experiment3` | 6.4 Experiment 3: Speeding and Acceleration (Table 8) | Speed increase, speed threshold, time window | Avante CN7 (2021), EDR |
+| `experiment4` | 6.5 Experiment 4: Scalability (Table 9) | Radius, speed threshold, time window, phone-number match | Data of Experiments 1 to 3, tiled to 1 to 32 ciphertexts |
 
-Experiments 1 to 3 each have their own README.
+Each folder has its own README with the setting and the results.
 
 ## Predicates
 
-| Predicate | Column | Step calls | Bootstraps | Chebyshev evaluations |
+All five predicates are built from the step function of Eq. (1), a composite polynomial approximation of the sign function with 8 stages and a multiplicative depth of 32. Btsp. denotes the number of bootstrapping operations per ciphertext.
+
+| Predicate | Input column | Step calls | Btsp. | Function in `operators/forensic_operator.py` |
 | --- | --- | --- | --- | --- |
-| Radius | `Lat_x1e5`, `Lon_x1e5` | 1 | 4 | 8 |
-| Phone-number match | `Peer_number` | 6 | 27 | 48 |
-| Existence (one-bit response) | match ciphertext | 1 | 4 | 8 |
-| Speed increase | `Speed_kmh` | 1 | 4 | 8 |
-| Speed threshold | `Speed_kmh` | 1 | 4 | 8 |
-| Time window | `T_rel_ms` | 2 | 8 | 16 |
+| Radius, Eq. (3) | `Lat_x1e5`, `Lon_x1e5` | 1 | 4 | `compute_geofence_score` |
+| Phone-number match, Eq. (4) on three digit groups | `Peer_number` | 6 | 27 | `detect_phone_match` |
+| Existence circuit (one-bit response) | match decisions | 1 | 4 | `detect_phone_exists` |
+| Time window, Eq. (4) | `T_rel_ms` | 2 | 8 | `time_range` |
+| Speed increase, Eq. (1) on adjacent slots | `Speed_kmh` | 1 | 4 | `detect_speed_increase` |
+| Speed threshold, Eq. (1) | `Speed_kmh` | 1 | 4 | `detect_overspeed` |
 
-Counts are per ciphertext. Bootstraps counts the calls this framework issues explicitly. The Chebyshev evaluation routine bootstraps further on its own, which the SDK manages and which is not counted here.
+The cost of a query is set by the number of step calls: about 0.11 s per bootstrapping operation on the A100.
 
-Runtime follows the bootstrap count rather than the kind of predicate. In the runs of Experiments 1 to 3, measured time divided by bootstrap count is about 0.11 seconds on the GPU and between 2.9 and 3.6 seconds (about 3.2 on average) on the CPU (machines below). Phone-number matching is slow because it runs six step functions, not because matching a number is intrinsically harder than drawing a circle.
+## Datasets
 
-When the data spans several ciphertexts, every predicate runs once per ciphertext, so runtime grows linearly with the number of ciphertexts, about 0.44 seconds per ciphertext for each step call on the GPU (11 to 13 seconds on the CPU). The existence circuit is the exception: it sums all ciphertexts first and then runs once, so its cost does not grow with their number.
-
-## Results at a glance
-
-Mean of 30 runs. Every query agreed with the plaintext computation on every scored slot, on both machines.
-
-| Circuit | Bootstraps | GPU (A100) | CPU |
+| File | Vehicle | Records | Experiment |
 | --- | --- | --- | --- |
-| Radius (Experiment 1) | 4 | 0.44 to 0.46 s | 12.62 to 14.27 s |
-| Phone-number match + existence (Experiment 2) | 31 | 3.32 to 3.35 s | about 90 to 97 s |
-| Speed increase (Experiment 3) | 4 | 0.45 s | 14.33 s |
-| Speed threshold (Experiment 3) | 4 | 0.43 s | 13.34 s |
-| Time window (Experiment 3) | 8 | 0.88 s | 26.01 s |
+| `k5_jellybean_drive.csv` | Kia K5 JF (2017), Jellybean (Android 4.2.2) IVI | 613, of which 330 carry a GPS fix | 1 |
+| `k5_kitkat_drive.csv` | Kia K5 DL3 (2020), KitKat (Android 4.4.2) IVI | 6,820, of which 246 carry a GPS fix | 1 |
+| `niro_call.csv` | Kia Niro (2018), Jellybean IVI | 204, of which 19 carry a phone number | 2 |
+| `avante_accident.csv` | Hyundai Avante CN7 (2021), EDR report | 16 rows, of which 11 are pre-crash speed samples | 3 |
 
-The paper reports the GPU figures. The CPU figures are kept in the per-experiment READMEs for comparison.
+Column names follow the paper. A value of -1 marks an unobserved field. Coordinates are integers scaled by 10^5 (3731808 is 37.31808 degrees). `T_rel_ms` is the offset from the reference time T0.
 
-Scaling (`experiment_scaling`, GPU, mean of 30 timed runs per point):
+The phone numbers, Bluetooth MAC address, IMEI, ICCID and the single location fix in `niro_call.csv` were substituted after the experiments. Each phone number keeps its first and last digit groups, and only the middle group is replaced, one to one, so every match count and every decision of Experiment 2 is unchanged.
 
-| Ciphertexts | Rows | Radius | Speed threshold | Time window | Phone match + existence |
-| --- | --- | --- | --- | --- | --- |
-| 1 | 32,768 | 0.45 s | 0.44 s | 0.89 s | 3.35 s |
-| 2 | 65,536 | 0.89 s | 0.89 s | 1.78 s | 6.24 s |
-| 4 | 131,072 | 1.79 s | 1.78 s | 3.55 s | 12.04 s |
-| 8 | 262,144 | 3.58 s | 3.55 s | 7.11 s | 23.63 s |
-| 32 | 1,048,576 | 14.21 s | 14.11 s | 28.25 s | 92.60 s |
+## Encoding (Section 5.4)
 
-R^2 is 1.0000 for every predicate. A line fitted on 1 to 8 ciphertexts predicts the 32-ciphertext time within 0.7%.
+Every input is divided by a public constant S so that it lies in [-1, 1].
 
-## Requirements
+| Column | Encoding |
+| --- | --- |
+| `Lat_x1e5`, `Lon_x1e5` | Projected to EPSG:5186 meters, divided by the normalization width L = 884,592 m |
+| `Speed_kmh` | Divided by 200 |
+| `T_rel_ms` | Divided by 5,000, the maximum width of the time window |
+| `Peer_number` | Zero-padded to 11 digits, split into digit groups of 3, 4 and 4, divided by 999, 9,999 and 9,999 |
 
-- CryptoLab HEaaN SDK, GPU or CPU build, FGb parameter set
-- Python 3.10, numpy, pandas
-- A key directory the engine can read and write
+Unobserved fields are substituted before encryption with values fixed independently of any query: coordinates with a point more than 500 km from every recorded location, and phone numbers with the leading digit group 999, which no real number uses. Time and speed are left as they are.
 
-The experiments run inside the vendor Docker image.
+## Environment
 
-| | GPU (reported in the paper) | CPU |
-| --- | --- | --- |
-| Image | `cryptolabinc/heaan-stat:1.0.0-gpu` | CPU image of the same SDK |
-| Machine | Google Colab, NVIDIA A100-SXM4-80GB | Intel Xeon Sapphire Rapids, 16 vCPU, 64 GB RAM |
-| Selected by | `HE_DEVICE=gpu` | `HE_DEVICE` unset or `cpu` (default) |
+| | |
+| --- | --- |
+| HE library | CryptoLab HEaaN SDK, GPU distribution, FGb parameter set (32,768 slots) |
+| Image | `cryptolabinc/heaan-stat:1.0.0-gpu` |
+| Machine | Google Colab instance, NVIDIA A100-SXM4 GPU with 80 GB of memory |
+| Python | 3.10, numpy, pandas |
 
-Colab has no Docker daemon, so the GPU image is run with udocker:
+Colab has no Docker daemon, so the image is run with udocker.
 
 ```
 bash colab/setup_udocker.sh                          # once per runtime, ends with SANITY OK
 nohup bash colab/run_a100.sh > run_a100.out 2>&1 &   # all experiments, results to Google Drive
 ```
 
-`run_a100.sh` runs Experiments 1 to 3 thirty times and Experiment 4 at 1, 2, 4, 8 and 32 ciphertexts, with `HE_DEVICE=gpu` and `PHONE_C=65536`, then aggregates the results. It took about 3 hours 10 minutes on the A100.
+`run_a100.sh` runs Experiments 1 to 3 in 30 separate processes and Experiment 4 at 1, 2, 4, 8 and 32 ciphertexts with 30 timed runs per point, then aggregates the results. The whole run took about 3 hours 10 minutes, and the folder it writes is what `results/` holds.
 
-## Running
-
-Each experiment runs from its own folder.
+To run a single experiment inside the container:
 
 ```
-export PYTHONPATH=<repo root>
-export HE_DEVICE=gpu            # omit for the CPU build
+export PYTHONPATH=<repo root> HE_DEVICE=gpu
 cd <repo root>/experiments/experiment1
 python3 -W ignore -u test.py
 ```
 
-With `HE_DEVICE=gpu`, `HEEngine` creates the context on the GPU, loads every key file from the key directory and moves the keys to the device; plaintext messages and rotation masks are moved there before use. Nothing else in the circuits changes between the two builds.
+With `HE_DEVICE=gpu`, `HEEngine` creates the context on the GPU and moves the keys there. The same code runs on the CPU distribution of HEaaN when `HE_DEVICE` is not set.
 
-Results land in `results/` next to the script. The script installs its own console tee, so the transcript is written for you and no shell redirect is needed.
+## Results
 
-Reported figures are the mean of 30 repetitions. The first bootstrapping call of a process is slower than the rest, so `HEEngine` is constructed with `warmup_bootstrap=True` and a single run is not representative on its own.
+All runtimes are means over 30 runs on the A100. Every query agreed with the plaintext decision on every scored slot. The plaintext baselines take a median of 0.126 ms per query.
 
-The scaling experiment is run the same way, then summarized:
+| Experiment | Queries | Btsp. | Time (s) | Query encryption (s) |
+| --- | --- | --- | --- | --- |
+| 1: radius | 12 | 4 | 0.44 to 0.46 | 0.04 to 0.05 |
+| 2: phone-number match and existence circuit | 11 | 31 | 3.32 to 3.35 | 0.26 to 0.28 |
+| 3: speed increase, speed threshold, time window | 3 | 4, 4, 8 | 0.45, 0.43, 0.88 | 0.13 |
 
-```
-cd <repo root>/experiments/experiment_scaling
-python3 -W ignore -u bench.py > bench.log 2>&1
-python3 bench_summary.py
-```
+Experiment 4, time (s) by the number of ciphertexts with Btsp. in parentheses (Table 9):
 
-`bench.py` reads `PREDS` (default `geo,edr,phone`), `MULTIPLES` (default `1,2,4,8,32`), `REPS` (default `30`) and `PHONE_C` (default `65536`) from the environment. `PHONE_C` is the public bound on the match count used by the existence circuit; tiling multiplies the matches (61,680 at 32 ciphertexts), so it must exceed that. The earlier CPU run used `MULTIPLES=1,2,3,4,5` and `PHONE_C=16384`. Each point is checked against plaintext on every row before it is timed. Times are appended to `results/bench_times.csv`, and `bench_summary.py` writes `results/bench_summary.csv` with a linear fit per predicate. This script does not tee its output, so redirect it as above.
+| Ciphertexts | Rows | Radius | Speed threshold | Time window | Phone-number match |
+| --- | --- | --- | --- | --- | --- |
+| 1 | 32,768 | 0.45 (4) | 0.44 (4) | 0.89 (8) | 3.35 (31) |
+| 2 | 65,536 | 0.89 (8) | 0.89 (8) | 1.78 (16) | 6.24 (58) |
+| 4 | 131,072 | 1.79 (16) | 1.78 (16) | 3.55 (32) | 12.04 (112) |
+| 8 | 262,144 | 3.58 (32) | 3.55 (32) | 7.11 (64) | 23.63 (220) |
+| 32 | 1,048,576 | 14.21 (128) | 14.11 (128) | 28.25 (256) | 92.60 (868) |
 
-## Encoding
+The runtime grows linearly with the number of ciphertexts (R^2 >= 0.9999), adding about 0.44 s per ciphertext for each step call.
 
-Every input is normalized into the range that the composite step function accepts, and every column is normalized differently.
+### Result files
 
-| Column | Handling |
+| Path | Contents |
 | --- | --- |
-| Coordinates | Projected to EPSG:5186 meters, divided by 884,592 |
-| Speed | Divided by 200 km/h |
-| Time offset | Divided by 5,000 ms |
-| Phone number | Zero-padded to 11 digits, split 3/4/4, divided by 999 / 9,999 / 9,999 |
-
-Coordinates are projected before encryption so the circuit is a plain Euclidean distance. A latitude-dependent scale factor would have to travel in the clear and would disclose roughly where the query center lies.
-
-A value of -1 marks a field the log did not record. Unrecorded rows are substituted before encryption with a value chosen independently of any query: for coordinates, a fixed point more than 500 km from every recorded location; for phone numbers, the prefix 999, which no real number uses. The substitution is plaintext preprocessing, so it costs no homomorphic operations, and it lets the answer for those rows be checked rather than excluded.
-
-## Data
-
-Logs collected from vehicles operated by the authors.
-
-| File | Vehicle | Rows |
-| --- | --- | --- |
-| `k5_jellybean_drive.csv` | Kia K5 JF, 2017, Android Jellybean | 613 |
-| `k5_kitkat_drive.csv` | Kia K5 DL3, 2020, Android KitKat | 6,820 |
-| `niro_call.csv` | Kia Niro, Bluetooth call history | 204 |
-| `avante_accident.csv` | Hyundai Avante CN7, event data recorder | 16 |
-
-Column names follow the notation used in the paper. Coordinates are stored as integers scaled by 100,000, so 3731808 means 37.31808 degrees.
-
-## Identifier substitution
-
-Subscriber and device identifiers in `niro_call.csv` (phone numbers, Bluetooth MAC address, IMEI, ICCID) and its single location fix were substituted after the experiments were run. Each phone number keeps its first and last digit groups, and only the middle group is replaced, one-to-one, so every match count and every decision in Experiment 2 is unchanged. Rerunning Experiment 2 on the substituted data can change the decrypted values only in their last digits. The other identifiers and the location fix are not used by any experiment.
+| `results/runs/run_01` to `run_30` | Output of Experiments 1 to 3 for each of the 30 runs |
+| `results/aggregated/` | `aggregate.py` over the 30 runs: mean times and worst-case decision values |
+| `results/paper_numbers.txt` | The numbers of Tables 6 to 8 and Section 6, from `tools/extract_gpu.py` |
+| `results/experiment4/` | Every timed run of Experiment 4, its summary and the linear fit (Table 9) |
+| `results/logs/` | Console log of each run, `main.log`, and `gpu_monitor.csv` (GPU clock and throttle reasons every 10 s, timestamps in UTC) |
 
 ## Attribution
 
-`engine/`, `hedata/`, `operators/operator.py` and `operators/inv_sqrt.py` are adapted from the PP-STAT implementation by Hyunmin Choi, itself ported from an earlier Go implementation.
+`engine/`, `hedata/`, `operators/operator.py` and `operators/inv_sqrt.py` are adapted from the PP-STAT implementation, which also provides the Chebyshev coefficients of the step function. `operators/forensic_operator.py` and everything under `experiments/` are new to this work. The homomorphic encryption backend is the HEaaN SDK by CryptoLab.
 
 > H. Choi, "PP-STAT: An Efficient Privacy-Preserving Statistical Analysis Framework Using Homomorphic Encryption," CIKM '25, pp. 448-457.
-
-`operators/forensic_operator.py` and everything under `experiments/` are new to this work.
-
-The homomorphic backend is the HEaaN SDK by CryptoLab.
-
-## Citation
-
-To be added on acceptance.

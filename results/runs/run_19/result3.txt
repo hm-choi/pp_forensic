@@ -1,0 +1,60 @@
+Device: GPU
+Key directory: /root/heaan_setting/FGb/keys/
+Keys preloaded: enc, mult, conj, 45 rotation keys
+Key loaded
+Warm-up encrypt start [GPU]
+Warm-up encrypt done
+Warm-up bootstrap start
+Warm-up bootstrap done
+
+HEAAN ENGINE LOAD SUCCESS [device=GPU]
+
+
+Avante EDR log: 16 recorded rows, 11 rows with a recorded speed
+Query parameters encrypted in 123.831 ms
+
+Speed increase (1 means the speed rose from the previous row)
+  cipher [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0]
+  plain  [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0]
+  agree  11 / 11
+  rows where false   worst reading  6.161e-11
+  rows where true    worst reading  0.9999999995   best 1.0000000011
+  TIME 0.45 s   PLAIN TIME 0.299 ms   BS 4  CHEB 8
+
+Overspeed (1 means the speed exceeds 60 km/h)
+  cipher [0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 0]
+  plain  [0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 0]
+  agree  11 / 11
+  rows where false   worst reading  4.715e-10
+  rows where true    worst reading  0.9999999998   best 1.0000000004
+  TIME 0.43 s   PLAIN TIME 0.447 ms   BS 4  CHEB 8
+
+Time window: -3000.0 to -1000.0
+  cipher [0, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0]
+  plain  [0, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0]
+  agree  32768 / 32768   (padding included)
+  rows where false   worst reading  2.791e-09
+  rows where true    worst reading  1.0000000000   best 1.0000000008
+  TIME 0.89 s   PLAIN TIME 0.121 ms   BS 8  CHEB 16
+
+row  t_rel  speed |    incr out  p |     over out  p |      win out  p
+--------------------------------------------------------------------------
+  0   -5020     42 |  1.0000000003  1 | -0.0000000001  0 | -0.0000000004  0
+  1   -4520     46 |  0.9999999995  1 | -0.0000000005  0 |  0.0000000004  0
+  2   -4020     50 |  1.0000000005  1 | -0.0000000003  0 | -0.0000000002  0
+  3   -3520     53 |  1.0000000006  1 |  0.0000000000  0 | -0.0000000003  0
+  4   -3020     56 |  1.0000000010  1 | -0.0000000000  0 | -0.0000000002  0
+  5   -2520     59 |  1.0000000011  1 | -0.0000000000  0 |  1.0000000008  1
+  6   -2020     61 |  1.0000000001  1 |  0.9999999998  1 |  1.0000000000  1
+  7   -1520     64 |  1.0000000006  1 |  0.9999999998  1 |  1.0000000008  1
+  8   -1020     66 |  1.0000000008  1 |  1.0000000004  1 |  1.0000000001  1
+  9    -520     68 |  1.0000000004  1 |  1.0000000002  1 | -0.0000000005  0
+ 10     -20      5 |  0.0000000001  0 | -0.0000000001  0 |  0.0000000002  0
+ 11     -20     -1 |             .  . |             .  . |  0.0000000007  0
+ 12      -3     -1 |             .  . |             .  . |  0.0000000017  0
+ 13       0     -1 |             .  . |             .  . |  0.0000000001  0
+ 14       5     -1 |             .  . |             .  . | -0.0000000005  0
+ 15      11     -1 |             .  . |             .  . |  0.0000000002  0
+
+ 3 predicates in total, 0 mismatched
+Saved: results/result2.txt, results/exp3_avante_summary.csv, results/exp3_avante_rows.csv

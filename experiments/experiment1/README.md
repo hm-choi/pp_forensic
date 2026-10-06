@@ -1,113 +1,73 @@
-# Experiment 1 - Encrypted Geofence on GPS Coordinates
+# Experiment 1: Location History
 
-## Datasets
+Section 6.2 and Table 6 of the paper.
 
-Two Kia K5 infotainment logs, both storing real GPS fixes.
+## Task
 
-| | k5_jellybean_drive.csv | k5_kitkat_drive.csv |
-|---|---|---|
-| Vehicle | Kia K5, 2017 | Kia K5 (DL3), 2020 |
-| Platform | Android JellyBean | Android KitKat |
-| Rows | 613 | 6,820 |
-| Rows with GPS | 330 | 246 |
-| Collection period | 2022-04-01 to 04-15, continuous | 2023-06 to 2025-06, sparse |
-| Query centre used | 37.86484, 127.05997 | 37.31808, 127.12741 |
+Decide whether a vehicle passed through a given area. The custodian is taken to be the cloud of a map service provider that holds the location history. The investigator sends the query center and the radius as ciphertexts and receives only the decision.
 
-Fields present in both logs: local timestamp, epoch milliseconds, `Lat_x1e5`
-and `Lon_x1e5` as integers scaled by 100,000, `Speed_kmh`, and heading in
-degrees. JellyBean additionally records altitude and ignition on/off times.
-KitKat additionally records a server-side timestamp (6,547 rows) and a
-navigation destination identifier (25 rows).
+## Data
 
-A value of -1 marks a field that was not recorded. A stored value of 3731808
-means 37.31808 degrees.
+| | K5 JF (2017) | K5 DL3 (2020) |
+| --- | --- | --- |
+| File | `datasets/k5_jellybean_drive.csv` | `datasets/k5_kitkat_drive.csv` |
+| IVI platform | Jellybean (Android 4.2.2) | KitKat (Android 4.4.2) |
+| Source of the coordinates | vehicle big-data JSON (`infobigdata.everylog.json`, Base64 decoded) | `[CMM]VI-185 wdwStatus` lines of `telematics.log` |
+| Records | 613 | 6,820 |
+| Records with a GPS fix | 330 | 246 |
+| Query center | 37.86484, 127.05997 | 37.31808, 127.12741 |
 
-The two logs differ sharply in density. JellyBean holds two weeks of daily
-driving, while KitKat spans two years but concentrates most of its fixes in
-three weeks of 2024. Running the same predicate on both shows the method does
-not depend on how the log was sampled.
+The rows of each feature matrix are placed in the 32,768 slots of a single ciphertext.
 
-## Experiment
+## Predicate
 
-Answer "was this vehicle inside a circle of radius R around point C?" without
-decrypting the vehicle's coordinates and without disclosing C or R.
+Radius predicate, Eq. (3), `HEForensicTest.compute_geofence_score`.
 
-- Both the log coordinates and the query centre are projected to EPSG:5186
-  metres before anything is encrypted, and then divided by a public width of
-  884,592 m. The circuit is a plain Euclidean distance in that projected plane,
-  so it carries no latitude-dependent constant. A constant derived from the
-  centre latitude would have to be applied in the clear and would leak roughly
-  where the circle is drawn.
-- The centre and the squared radius are encrypted under the requester's key.
-  The custodian receives ciphertexts only.
-- `compute_geofence_score` compares squared distance against squared radius,
-  which avoids a square root, then reads the sign with `he_step`.
-- Rows without a coordinate are pushed to 33.06N / 124.36E, over 500 km away,
-  so they always evaluate to 0.
-- Only the 0/1 verdict is decrypted.
+- Both the log coordinates and the query center are projected to EPSG:5186 meters before encryption and divided by the public normalization width L = 884,592 m. The circuit is a plain Euclidean distance in that plane, so no latitude-dependent factor stays in the circuit.
+- The squared distance is compared with the squared radius, which avoids a square root. One step call, 4 Btsp.
+- Rows without a coordinate are substituted with 33.06 N, 124.36 E, more than 500 km from every recorded location, so they always evaluate to 0.
+- Radii of 0.2, 0.5, 1, 2, 3 and 5 km, corresponding to a building, an intersection and an administrative neighborhood. Wider radii return every observed coordinate.
 
-The same decision is computed on plaintext and timed, as a check on the
-homomorphic result. It never produces the answer.
+## Results (A100, 30 runs)
 
-The swept radii are 0.2, 0.5, 1, 2, 3 and 5 km. Radii of 50 km and 100 km were
-dropped from an earlier version of this sweep: both returned every observed row,
-so the answer was yes regardless of where the vehicle had been. A geofence query
-is only meaningful while the circle can exclude something.
+All twelve queries matched the plaintext decision on all 32,768 slots in every run. Decrypted values are the worst case over all slots and all 30 runs.
 
-## Results
+| Radius (km) | Inside rows | Inside, decrypted | Outside rows | Outside, decrypted | Btsp. | Time (s) |
+| --- | --- | --- | --- | --- | --- | --- |
+| **K5 JF (2017)** | | | | | | |
+| 0.2 | 4 | 0.9961677324 | 32,764 | 3.8e-9 | 4 | 0.44 |
+| 0.5 | 4 | 0.9999999985 | 32,764 | 4.7e-9 | 4 | 0.44 |
+| 1 | 5 | 0.9999999988 | 32,763 | 4.7e-9 | 4 | 0.44 |
+| 2 | 5 | 0.9999999982 | 32,763 | 3.9e-9 | 4 | 0.44 |
+| 3 | 53 | 0.9999999980 | 32,715 | 4.1e-9 | 4 | 0.44 |
+| 5 | 254 | 0.9999999975 | 32,514 | 4.0e-9 | 4 | 0.44 |
+| **K5 DL3 (2020)** | | | | | | |
+| 0.2 | 3 | 0.7649887983 | 32,765 | 4.4e-9 | 4 | 0.46 |
+| 0.5 | 13 | 0.9999999986 | 32,755 | 4.2e-9 | 4 | 0.44 |
+| 1 | 52 | 0.9999999972 | 32,716 | 4.5e-9 | 4 | 0.44 |
+| 2 | 56 | 0.9999999979 | 32,712 | 4.4e-9 | 4 | 0.44 |
+| 3 | 58 | 0.9999999970 | 32,710 | 3.8e-9 | 4 | 0.44 |
+| 5 | 58 | 0.9999999977 | 32,710 | 3.4e-9 | 4 | 0.44 |
 
-All twelve queries agreed with the plaintext computation on every one of the
-32,768 slots.
+For radii of 0.5 km and above, every slot inside the circle decrypts to at least 0.999999997. At 0.2 km, two records lying 10 m and 40 m inside the query boundary fall to 0.76 and 0.996, which correspond to step-function margins of 5.2e-9 and 1.8e-8. Every input whose margin is at least 3e-8 decrypts to 0.999999997 or above, so the resolution of the approximation is on the order of 1e-8, a few tens of meters from the boundary.
 
-| Radius | KitKat plain | KitKat cipher | JellyBean plain | JellyBean cipher | Agreement |
-|---|---|---|---|---|---|
-| 0.2 km | 3 | 3 | 4 | 4 | 32768/32768 |
-| 0.5 km | 13 | 13 | 4 | 4 | 32768/32768 |
-| 1 km | 52 | 52 | 5 | 5 | 32768/32768 |
-| 2 km | 56 | 56 | 5 | 5 | 32768/32768 |
-| 3 km | 58 | 58 | 53 | 53 | 32768/32768 |
-| 5 km | 58 | 58 | 254 | 254 | 32768/32768 |
+Encrypting the query parameters takes 0.04 to 0.05 s.
 
-Neither log is saturated at the widest radius: 58 of the 246 KitKat fixes and
-254 of the 330 JellyBean fixes fall inside a 5 km circle, so every query in the
-sweep still excludes part of the log.
+## Run
 
-### Cost
-
-Mean of 30 runs. GPU: NVIDIA A100-SXM4-80GB (figures in the paper). CPU: Intel Xeon Sapphire Rapids, 16 vCPU.
-
-| | GPU | CPU |
-|---|---|---|
-| Explicit bootstraps per query | 4 | 4 |
-| Chebyshev evaluations per query | 8 | 8 |
-| Homomorphic time per query | 0.44 to 0.46 s | 12.62 to 14.27 s |
-| Query parameter encryption | 0.04 to 0.05 s | about 0.02 s |
-| Plaintext time per query | under 0.2 ms | under 0.2 ms |
-
-On the GPU run, inside slots stay at 0.999999997 or above for every radius of 0.5 km
-and more. At 0.2 km, two records lying 10 m and 40 m inside the boundary decrypt to
-0.76 (K5 DL3) and 0.996 (K5 JF); both still round to the correct answer.
-
-The geofence is the cheapest of the six circuits in this work, because it reads
-one sign and therefore runs the step function once.
-
-## How to run
-
-```bash
-export PYTHONPATH=/pp_forensic
-export HE_DEVICE=gpu            # omit for the CPU build
-cd /pp_forensic/experiments/experiment1
+```
+export PYTHONPATH=<repo root> HE_DEVICE=gpu
+cd <repo root>/experiments/experiment1
 python3 -W ignore -u test.py
 ```
 
-The script writes its own transcript, so no shell redirect is needed.
-
 ## Output
 
+Written to `results/` next to the script. The 30 A100 runs are in `results/runs/run_XX/` of the repository root.
+
 | File | Contents |
-|---|---|
-| `results/result1.txt` | Console output |
-| `results/exp1_<dataset>_summary.csv` | Per radius: plaintext count, ciphertext count, agreement, worst decrypted value on each side of the decision, elapsed time |
-| `results/exp1_all_summary.csv` | Both datasets in one table |
-| `results/exp1_<dataset>_slots.csv` | A fixed sample of slots followed through every radius |
-| `results/exp1_<dataset>_curve.csv` | Decrypted value against true distance |
+| --- | --- |
+| `result1.txt` | Console output |
+| `exp1_all_summary.csv` | Both vehicles: per radius, plaintext and ciphertext counts, agreement, worst decrypted value inside and outside, times, Btsp. |
+| `exp1_k5_jellybean_summary.csv`, `exp1_k5_kitkat_summary.csv` | The same per vehicle |
+| `exp1_k5_jellybean_slots.csv`, `exp1_k5_kitkat_slots.csv` | A fixed sample of slots followed through every radius: distance, plaintext decision, decrypted value |

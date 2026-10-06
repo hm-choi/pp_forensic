@@ -4,7 +4,7 @@ usage: python3 tools/extract_gpu.py <dir holding run_01 ... run_30>
 """
 import glob, sys
 import numpy as np, pandas as pd
-R = sys.argv[1] if len(sys.argv) > 1 else '/pp_forensic_do/runs'
+R = sys.argv[1] if len(sys.argv) > 1 else 'results/runs'
 pd.set_option('display.width', 250); pd.set_option('display.max_columns', 40)
 F = lambda v: f'{v:.10g}'
 

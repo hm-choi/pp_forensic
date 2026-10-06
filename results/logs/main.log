@@ -1,0 +1,36 @@
+[2026-10-06 15:28:32 KST] start  N=30 REPS=30 MULTIPLES=1,2,4,8 BIG=32 REPS32=30 PHONE_C=65536  commit 1aae911
+[2026-10-06 15:31:04 KST] RUN 01 saved   12 queries in total, 0 mismatched 3 predicates in total, 0 mismatched 
+[2026-10-06 15:33:35 KST] RUN 02 saved   12 queries in total, 0 mismatched 3 predicates in total, 0 mismatched 
+[2026-10-06 15:36:07 KST] RUN 03 saved   12 queries in total, 0 mismatched 3 predicates in total, 0 mismatched 
+[2026-10-06 15:38:38 KST] RUN 04 saved   12 queries in total, 0 mismatched 3 predicates in total, 0 mismatched 
+[2026-10-06 15:41:10 KST] RUN 05 saved   12 queries in total, 0 mismatched 3 predicates in total, 0 mismatched 
+[2026-10-06 15:43:42 KST] RUN 06 saved   12 queries in total, 0 mismatched 3 predicates in total, 0 mismatched 
+[2026-10-06 15:46:13 KST] RUN 07 saved   12 queries in total, 0 mismatched 3 predicates in total, 0 mismatched 
+[2026-10-06 15:48:46 KST] RUN 08 saved   12 queries in total, 0 mismatched 3 predicates in total, 0 mismatched 
+[2026-10-06 15:51:17 KST] RUN 09 saved   12 queries in total, 0 mismatched 3 predicates in total, 0 mismatched 
+[2026-10-06 15:53:48 KST] RUN 10 saved   12 queries in total, 0 mismatched 3 predicates in total, 0 mismatched 
+[2026-10-06 15:56:20 KST] RUN 11 saved   12 queries in total, 0 mismatched 3 predicates in total, 0 mismatched 
+[2026-10-06 15:58:52 KST] RUN 12 saved   12 queries in total, 0 mismatched 3 predicates in total, 0 mismatched 
+[2026-10-06 16:01:25 KST] RUN 13 saved   12 queries in total, 0 mismatched 3 predicates in total, 0 mismatched 
+[2026-10-06 16:03:56 KST] RUN 14 saved   12 queries in total, 0 mismatched 3 predicates in total, 0 mismatched 
+[2026-10-06 16:06:27 KST] RUN 15 saved   12 queries in total, 0 mismatched 3 predicates in total, 0 mismatched 
+[2026-10-06 16:08:59 KST] RUN 16 saved   12 queries in total, 0 mismatched 3 predicates in total, 0 mismatched 
+[2026-10-06 16:11:32 KST] RUN 17 saved   12 queries in total, 0 mismatched 3 predicates in total, 0 mismatched 
+[2026-10-06 16:14:05 KST] RUN 18 saved   12 queries in total, 0 mismatched 3 predicates in total, 0 mismatched 
+[2026-10-06 16:16:38 KST] RUN 19 saved   12 queries in total, 0 mismatched 3 predicates in total, 0 mismatched 
+[2026-10-06 16:19:08 KST] RUN 20 saved   12 queries in total, 0 mismatched 3 predicates in total, 0 mismatched 
+[2026-10-06 16:21:39 KST] RUN 21 saved   12 queries in total, 0 mismatched 3 predicates in total, 0 mismatched 
+[2026-10-06 16:24:11 KST] RUN 22 saved   12 queries in total, 0 mismatched 3 predicates in total, 0 mismatched 
+[2026-10-06 16:26:43 KST] RUN 23 saved   12 queries in total, 0 mismatched 3 predicates in total, 0 mismatched 
+[2026-10-06 16:29:14 KST] RUN 24 saved   12 queries in total, 0 mismatched 3 predicates in total, 0 mismatched 
+[2026-10-06 16:31:44 KST] RUN 25 saved   12 queries in total, 0 mismatched 3 predicates in total, 0 mismatched 
+[2026-10-06 16:34:18 KST] RUN 26 saved   12 queries in total, 0 mismatched 3 predicates in total, 0 mismatched 
+[2026-10-06 16:36:53 KST] RUN 27 saved   12 queries in total, 0 mismatched 3 predicates in total, 0 mismatched 
+[2026-10-06 16:39:27 KST] RUN 28 saved   12 queries in total, 0 mismatched 3 predicates in total, 0 mismatched 
+[2026-10-06 16:41:59 KST] RUN 29 saved   12 queries in total, 0 mismatched 3 predicates in total, 0 mismatched 
+[2026-10-06 16:44:31 KST] RUN 30 saved   12 queries in total, 0 mismatched 3 predicates in total, 0 mismatched 
+[2026-10-06 16:44:31 KST] EXP4 small start (multiples 1,2,4,8, reps 30)
+[2026-10-06 17:22:28 KST] EXP4 small done  16 OK / 0 X
+[2026-10-06 17:22:28 KST] EXP4 big start (multiples 32, reps 30)
+[2026-10-06 18:40:34 KST] EXP4 big done  4 OK / 0 X
+[2026-10-06 18:40:40 KST] ALL DONE  runs 30/30   results in /content/drive/MyDrive/pp_forensic_a100

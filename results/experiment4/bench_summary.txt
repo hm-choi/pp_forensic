@@ -1,0 +1,27 @@
+ pred             query  multiple  chunks    rows  mean_sec  std_sec  reps  bootstraps  correct
+  geo     radius 1.0 km         1       1   32768      0.45     0.00    30           4     True
+  geo     radius 1.0 km         2       2   65536      0.89     0.00    30           8     True
+  geo     radius 1.0 km         4       4  131072      1.79     0.01    30          16     True
+  geo     radius 1.0 km         8       8  262144      3.58     0.00    30          32     True
+  edr   speed threshold         1       1   32768      0.44     0.00    30           4     True
+  edr       time window         1       1   32768      0.89     0.00    30           8     True
+  edr   speed threshold         2       2   65536      0.89     0.00    30           8     True
+  edr       time window         2       2   65536      1.78     0.00    30          16     True
+  edr   speed threshold         4       4  131072      1.78     0.00    30          16     True
+  edr       time window         4       4  131072      3.55     0.00    30          32     True
+  edr   speed threshold         8       8  262144      3.55     0.00    30          32     True
+  edr       time window         8       8  262144      7.11     0.00    30          64     True
+phone match + existence         1       1   32768      3.35     0.00    30          31     True
+phone match + existence         2       2   65536      6.24     0.00    30          58     True
+phone match + existence         4       4  131072     12.04     0.00    30         112     True
+phone match + existence         8       8  262144     23.63     0.00    30         220     True
+  geo     radius 1.0 km        32      32 1048576     14.21     0.00    30         128     True
+  edr   speed threshold        32      32 1048576     14.11     0.00    30         128     True
+  edr       time window        32      32 1048576     28.25     0.00    30         256     True
+phone match + existence        32      32 1048576     92.60     0.01    30         868     True
+geo / radius 1.0 km: 0.44 s per added ciphertext, intercept 0.01 s, R^2 1.0000
+edr / speed threshold: 0.44 s per added ciphertext, intercept 0.01 s, R^2 1.0000
+edr / time window: 0.88 s per added ciphertext, intercept 0.02 s, R^2 1.0000
+phone / match + existence: 2.88 s per added ciphertext, intercept 0.52 s, R^2 1.0000
+
+saved results/bench_summary.csv

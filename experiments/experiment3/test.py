@@ -70,7 +70,7 @@ def report(name, out, plain):
 #=======================#
 car_data = pd.read_csv('../../datasets/avante_accident.csv')
 slot_count = 32768
-row_count = len(car_data)          # 16 recorded rows, the rest is padding
+row_count = len(car_data)          # 16 rows in the file; the 11 with a speed are the EDR pre-crash samples
 
 #=========================#
 ##  3. Do Preprocessing  ##
@@ -80,7 +80,7 @@ t_rel = np.pad(car_data['T_rel_ms'].to_numpy(),
 speed = np.pad(car_data['Speed_kmh'].to_numpy(),
                (0, slot_count - row_count), constant_values=0).astype(float)
 
-# Speed is recorded only for the rows before impact, so the speed predicates
+# Speed is recorded only for the 11 pre-crash samples, so the speed predicates
 # are scored on those rows.
 speed_rows = int((car_data['Speed_kmh'].to_numpy() != -1).sum())
 
@@ -93,14 +93,14 @@ speed_ctxt = ho.encrypt(speed)
 MAX_SPEED = 200.0                  # public normalization constant
 THRESHOLD_SPEED = 60.0
 
-# Window in the log's own unit (ms before impact). Neither bound sits on a
+# Window in the log's own unit (ms relative to T0). Neither bound sits on a
 # recorded timestamp, and the padding value -1 falls outside, so all 32,768
 # slots can be checked against the plaintext answer.
 START = -3000.0
 END = -1000.0
 RANGE = 5000.0
 
-# Query parameters, encrypted by the requester in the log's own units. Each
+# Query parameters, encrypted by the investigator in the log's own units. Each
 # circuit subtracts them from a freshly encrypted data ciphertext and
 # normalizes afterwards, so the two operands always sit at the same level.
 # detect_speed_increase carries no parameter.
@@ -114,7 +114,7 @@ print("\nAvante EDR log:", row_count, "recorded rows,", speed_rows, "rows with a
 print("Query parameters encrypted in", round(PARAM_ENC_TIME * 1000, 3), "ms")
 
 #=====================================================#
-##  5. Test the acceleration and deceleration test   ##
+##  5. Speed-increase predicate   ##
 #=====================================================#
 START_TIME = time.time()
 bscount.reset()
@@ -139,7 +139,7 @@ z1, n1, x1 = report('speed increase', out1[:speed_rows], plain1[:speed_rows])
 print("  TIME", round(HE_TIME, 2), "s   PLAIN TIME", round(PLAIN_TIME * 1000, 3), "ms   BS", BS1, " CHEB", CHEB1)
 
 #===========================================#
-##  6. Test the Speeding violation check   ##
+##  6. Speed-threshold predicate   ##
 #===========================================#
 START_TIME = time.time()
 bscount.reset()
@@ -163,7 +163,7 @@ z2, n2, x2 = report('overspeed', out2[:speed_rows], plain2[:speed_rows])
 print("  TIME", round(HE_TIME2, 2), "s   PLAIN TIME", round(PLAIN_TIME2 * 1000, 3), "ms   BS", BS2, " CHEB", CHEB2)
 
 #=====================================#
-##  7. Test the time window check    ##
+##  7. Time-window predicate    ##
 #=====================================#
 START_TIME = time.time()
 bscount.reset()
@@ -228,7 +228,7 @@ pd.DataFrame({
 
 bad = (agree1 != speed_rows) + (agree2 != speed_rows) + (agree3 != slot_count)
 print("\n 3 predicates in total,", bad, "mismatched")
-print("Saved: results/result2.txt, results/exp3_avante_summary.csv, "
+print("Saved: results/result3.txt, results/exp3_avante_summary.csv, "
       "results/exp3_avante_rows.csv")
 
 #==========================#

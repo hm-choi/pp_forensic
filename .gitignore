@@ -1,24 +1,9 @@
 __pycache__/
 *.pyc
 
-# experiment output
-results/
-runs/
-runs_sorento/
-results_all/
-aggregated/
-aggregated_sorento/
+# output written next to each experiment script; the A100 results are kept in results/
+experiments/*/results/
+/runs/
+/aggregated/
 *.log
-
-# local backups and one-off patch scripts
-datasets_backup/
-operators_backup/
-experiments/results_before_refactor/
-patch_bscount.py
-patch_experiments.py
-fix_invsqrt.py
-probe_bs.py
-runs_scaling/
-aggregated_scaling/
-experiments/run_all*.log
-experiments/experiment_excluded_sorento/
+!results/**/*.log

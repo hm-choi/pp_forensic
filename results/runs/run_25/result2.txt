@@ -1,0 +1,87 @@
+Device: GPU
+Key directory: /root/heaan_setting/FGb/keys/
+Keys preloaded: enc, mult, conj, 45 rotation keys
+Key loaded
+Warm-up encrypt start [GPU]
+Warm-up encrypt done
+Warm-up bootstrap start
+Warm-up bootstrap done
+
+HEAAN ENGINE LOAD SUCCESS [device=GPU]
+
+
+Niro call log: 204 rows   19 recorded numbers   4 distinct
+Number split (3, 4, 4)   normalization denominators (999, 9999, 9999)
+
+Per-row match and existence bit at C = 32
+query number   description              exp  answer   exist value    plain  cipher   agreement   nonmatch worst   match worst    MATCH TIME  EXIST TIME  ENC TIME  PLAIN TIME
+------------------------------------------------------------------------------------------------------------------------------------------------------
+bootstrapping!!
+bootstrapping!!
+bootstrapping!!
+010-5000-2924  original                    1       1   0.9999999998     12     12     32768/32768     1.265e-09     0.9999996637      2.88s      0.46s 311.545ms     0.124ms  bs 27/4
+  first 20 slots : [6.944507790299047e-11, 4.9872872406491004e-11, -1.2624737558035255e-10, 1.780969981705233e-11, -6.908549828214419e-11, 2.3050475070906953e-11, -3.2704884392727037e-11, 1.5473445510064832e-10, -2.745988906432905e-10, 1.1121446071890307e-10, -1.9784504361437535e-11, 1.7846349416264623e-10, 1.3876859046227312e-10, 1.256796483106202e-10, 3.213638069709833e-11, -1.3249112529525636e-12, -3.0949372171007294e-10, 8.57362579997686e-11, 1.7698003339841847e-10, -5.3810711269702015e-11]
+  plain            : [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+bootstrapping!!
+bootstrapping!!
+bootstrapping!!
+010-5000-2925  one digit, last group       0       0  -0.0000000002      0      0     32768/32768     1.384e-08       n/a        2.86s      0.46s 238.904ms     0.126ms  bs 27/4
+bootstrapping!!
+bootstrapping!!
+bootstrapping!!
+010-5100-9080  original                    1       1   0.9999999999      3      3     32768/32768     1.094e-09     0.9999996804      2.86s      0.46s 224.245ms     0.129ms  bs 27/4
+  first 20 slots : [1.6123316671398234e-10, 2.346689471780489e-10, 2.869835023679695e-10, -1.0949280588361149e-10, -1.3079851762127395e-10, 1.810250871963117e-10, -1.682525213559794e-11, 4.1486794820715644e-10, -1.935473455821038e-10, -8.51405412333794e-11, 4.4229409846865495e-11, -1.774996473726431e-10, -3.535613876680049e-11, -2.9829429316278524e-10, -6.125227863142968e-11, 3.1169187643818675e-12, -1.513333584191874e-10, 3.5787593166424663e-10, -1.184424819807224e-10, 2.2411667340463226e-11]
+  plain            : [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+bootstrapping!!
+bootstrapping!!
+bootstrapping!!
+010-5100-9081  one digit, last group       0       0   0.0000000002      0      0     32768/32768     4.381e-09       n/a        2.86s      0.46s 356.385ms     0.136ms  bs 27/4
+bootstrapping!!
+bootstrapping!!
+bootstrapping!!
+010-5200-1582  original                    1       1   1.0000000002      2      2     32768/32768     1.169e-09     0.9999996250      2.86s      0.46s 244.792ms     0.156ms  bs 27/4
+  first 20 slots : [-1.371672191548621e-10, 1.0090341552868119e-10, 2.1920462975333058e-10, -2.4854397989614042e-11, 1.1045525593252641e-10, 3.839716329193307e-10, -3.706881727526794e-11, -2.6432124671631926e-11, 1.380205923000605e-10, -4.176107862553621e-11, 4.185081735213179e-11, 3.0617143747700007e-10, 5.860887065619798e-11, 2.891019690312965e-10, -6.422453492013532e-12, -2.0464410854299492e-11, 3.5756957410331513e-10, 5.738471932894183e-10, -1.8286689540528064e-10, 1.4063629217577858e-11]
+  plain            : [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+bootstrapping!!
+bootstrapping!!
+bootstrapping!!
+010-5200-1583  one digit, last group       0       0  -0.0000000003      0      0     32768/32768     2.024e-09       n/a        2.86s      0.46s 280.300ms     0.125ms  bs 27/4
+bootstrapping!!
+bootstrapping!!
+bootstrapping!!
+006-5300-4858  original                    1       1   0.9999999996      2      2     32768/32768     1.146e-09     0.9999996863      2.86s      0.46s 278.268ms     0.129ms  bs 27/4
+  first 20 slots : [2.144078547004032e-10, 3.7125028754518875e-11, 3.4399952194358377e-10, 6.504022577602188e-11, 2.602045011611491e-10, -1.172450733821276e-10, -2.6398019352078113e-11, 8.920485243002002e-11, -9.14410485766219e-11, 3.036877834715126e-11, -9.060885243775004e-11, 2.72762523943844e-10, -8.615851422452817e-11, 1.515956228003566e-10, -2.3461526759172173e-11, -2.9008038637734038e-11, -3.6031038164345703e-10, 7.689597389258834e-11, -3.0289180270560214e-10, -3.468095574212792e-11]
+  plain            : [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+bootstrapping!!
+bootstrapping!!
+bootstrapping!!
+006-5300-4859  one digit, last group       0       0  -0.0000000002      0      0     32768/32768     3.691e-09       n/a        2.86s      0.46s 340.460ms     0.132ms  bs 27/4
+bootstrapping!!
+bootstrapping!!
+bootstrapping!!
+020-5000-2924  one digit, first group      0       0   0.0000000003      0      0     32768/32768     2.737e-08       n/a        2.86s      0.46s 240.962ms     0.127ms  bs 27/4
+bootstrapping!!
+bootstrapping!!
+bootstrapping!!
+010-5010-2924  one digit, middle group     0       0   0.0000000000      0      0     32768/32768     3.196e-08       n/a        2.86s      0.46s 253.739ms     0.129ms  bs 27/4
+bootstrapping!!
+bootstrapping!!
+bootstrapping!!
+010-1111-2222  not in the log              0       0   0.0000000001      0      0     32768/32768     1.368e-09       n/a        2.86s      0.46s 354.066ms     0.157ms  bs 27/4
+
+ 11 queries in total, 0 wrong
+
+Existence bit as the declared bound C grows
+query number        C   exp  answer    exist value   verdict      EXIST TIME
+--------------------------------------------------------------------------------------------------------
+010-5000-2924        32     1       1   0.9999999998     correct          0.44s
+010-5000-2924       256     1       1   0.9999999998     correct          0.44s
+010-5000-2924      2048     1       1   1.0000000003     correct          0.44s
+010-1111-2222        32     0       0   0.0000000001     correct          0.44s
+010-1111-2222       256     0       0   0.0000000003     correct          0.44s
+010-1111-2222      2048     0       0  -0.0000000003     correct          0.44s
+
+SUMMARY
+  match check  11 queries, 0 wrong
+  bound check  6 existence calls over C in [32, 256, 2048] , 0 wrong
+Saved: results/result2.txt, results/exp2_niro_match_summary.csv, results/exp2_niro_maxcount_sweep.csv

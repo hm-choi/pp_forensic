@@ -138,7 +138,7 @@ enc_segs = [ho.encrypt(segs[k]) for k in range(len(WIDTHS))]
 #=========================================#
 # Every number in the log, plus variants differing in exactly one digit.
 # Taking the queries from the log is an experiment convenience: in the protocol
-# the requester supplies a number it already holds.
+# the investigator supplies a number it already holds.
 obs = pd.Series(raw[raw != -1])
 real = [str(int(v)).zfill(NDIGIT) for v in obs.value_counts().index]   # most frequent first
 
@@ -156,7 +156,7 @@ print(f"\nNiro call log: {len(car_data)} rows   {int((raw != -1).sum())} recorde
 print(f"Number split {WIDTHS}   normalization denominators {DENOMS}")
 
 #=========================================#
-##  6. Test the phone number match check  ##
+##  6. Phone-number match and existence circuit  ##
 #=========================================#
 print(f"\nPer-row match and existence bit at C = {DEFAULT_MAX_COUNT}")
 print("query number   description              exp  answer   exist value    plain  cipher"
@@ -171,7 +171,7 @@ match_cache = {}
 for target, why, expect in QUERIES:
     tsegs = split_phone(int(target))
 
-    # Interval bounds, encrypted by the requester. Timed apart: requester cost.
+    # Interval bounds, encrypted by the investigator. Timed apart: investigator cost.
     ENC_START = time.time()
     enc_lowers = [hft.encrypt_param(t / d - MARGIN / d) for t, d in zip(tsegs, DENOMS)]
     enc_uppers = [hft.encrypt_param(t / d + MARGIN / d) for t, d in zip(tsegs, DENOMS)]
@@ -227,9 +227,9 @@ for target, why, expect in QUERIES:
 print("\n", len(QUERIES), "queries in total,", wrong, "wrong")
 
 #=========================================#
-##  7. Test the summation bound C         ##
+##  7. Declared bound C of the existence circuit  ##
 #=========================================#
-# C is a public bound the requester declares in advance, not part of the
+# C is a public bound the investigator declares in advance, not part of the
 # encrypted query. The match ciphertext is reused, so only the existence
 # circuit is re-run.
 PROBES = [(real[0], 1), ('01011112222', 0)]

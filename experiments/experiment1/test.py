@@ -131,14 +131,14 @@ def run(tag):
     x_ctxt = ho.encrypt(x)
     y_ctxt = ho.encrypt(y)
 
-    # Query centre, encrypted by the requester.
+    # Query center, encrypted by the investigator.
     enc_center_x = hft.encrypt_param(cx)
     enc_center_y = hft.encrypt_param(cy)
 
     dist_km = np.sqrt((x_m - cx_m) ** 2 + (y_m - cy_m) ** 2) / 1000.0   # plaintext check
 
     #=========================================#
-    ##  5. Test the geofence over radii      ##
+    ##  5. Radius predicate over the radii  ##
     #=========================================#
     print("\n[" + tag + "]", used, "of", len(car_data), "rows used,",
           int(observed.sum()), "rows with coordinates")
@@ -154,7 +154,7 @@ def run(tag):
     keep = np.concatenate([obs_sorted[pick], np.where(~observed)[0][:2]])
 
     for radius in RADIUS_LIST:
-        # Normalized radius, encrypted. Timed apart: requester cost.
+        # Normalized radius, encrypted. Timed apart: investigator cost.
         ENC_START = time.time()
         enc_radius = hft.encrypt_param(radius * 1000.0 / L_M)
         ENC_TIME = time.time() - ENC_START
@@ -224,7 +224,7 @@ if __name__ == '__main__':
               f"{'match' if ok else 'mismatch'}   {he_sec:.2f}s / {plain_sec*1000:.3f}ms   "
               f"bs {n_bs}  cheb {n_cheb}")
     print("\n", len(allrows), "queries in total,", bad, "mismatched")
-    print("Saved: results/result2.txt, results/exp1_<dataset>_summary.csv, "
+    print("Saved: results/result1.txt, results/exp1_<dataset>_summary.csv, "
           "results/exp1_all_summary.csv")
 
     #=========================#

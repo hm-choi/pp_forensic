@@ -1,0 +1,26 @@
+ pred             query  chunks  mean  std  size
+  geo     radius 1.0 km       1  0.45 0.00    30
+  geo     radius 1.0 km       2  0.89 0.00    30
+  geo     radius 1.0 km       4  1.79 0.01    30
+  geo     radius 1.0 km       8  3.58 0.00    30
+  edr   speed threshold       1  0.44 0.00    30
+  edr       time window       1  0.89 0.00    30
+  edr   speed threshold       2  0.89 0.00    30
+  edr       time window       2  1.78 0.00    30
+  edr   speed threshold       4  1.78 0.00    30
+  edr       time window       4  3.55 0.00    30
+  edr   speed threshold       8  3.55 0.00    30
+  edr       time window       8  7.11 0.00    30
+phone match + existence       1  3.35 0.00    30
+phone match + existence       2  6.24 0.00    30
+phone match + existence       4 12.04 0.00    30
+phone match + existence       8 23.63 0.00    30
+  geo     radius 1.0 km      32 14.21 0.00    30
+  edr   speed threshold      32 14.11 0.00    30
+  edr       time window      32 28.25 0.00    30
+phone match + existence      32 92.60 0.01    30
+
+geo / radius 1.0 km: slope 0.45 s/ct (fit on [1, 2, 4, 8]), R^2 all points 1.0000 | 32 ct predicted 14.3 s, measured 14.2 s, error -0.6%
+edr / speed threshold: slope 0.44 s/ct (fit on [1, 2, 4, 8]), R^2 all points 1.0000 | 32 ct predicted 14.2 s, measured 14.1 s, error -0.7%
+edr / time window: slope 0.89 s/ct (fit on [1, 2, 4, 8]), R^2 all points 1.0000 | 32 ct predicted 28.4 s, measured 28.3 s, error -0.7%
+phone / match + existence: slope 2.90 s/ct (fit on [1, 2, 4, 8]), R^2 all points 1.0000 | 32 ct predicted 93.2 s, measured 92.6 s, error -0.6%

@@ -1,0 +1,118 @@
+Device: GPU
+Key directory: /root/heaan_setting/FGb/keys/
+Keys preloaded: enc, mult, conj, 45 rotation keys
+Key loaded
+Warm-up encrypt start [GPU]
+Warm-up encrypt done
+Warm-up bootstrap start
+Warm-up bootstrap done
+
+HEAAN ENGINE LOAD SUCCESS [device=GPU]
+
+
+==== bench start 2026-10-06 08:23:01  PREDS=['geo', 'edr', 'phone'] MULTIPLES=[32] REPS=30
+OK geo   radius 1.0 km      32x  32 ct  1048576 rows  mean   14.21s  std  0.00s  (warm-up  14.24s)  bs 128  cheb  256  reps 30
+OK edr   speed threshold    32x  32 ct  1048576 rows  mean   14.11s  std  0.00s  (warm-up  14.13s)  bs 128  cheb  256  reps 30
+OK edr   time window        32x  32 ct  1048576 rows  mean   28.25s  std  0.00s  (warm-up  28.25s)  bs 256  cheb  512  reps 30
+bootstrapping!!
+bootstrapping!!
+bootstrapping!!
+bootstrapping!!
+bootstrapping!!
+bootstrapping!!
+bootstrapping!!
+bootstrapping!!
+bootstrapping!!
+bootstrapping!!
+bootstrapping!!
+bootstrapping!!
+bootstrapping!!
+bootstrapping!!
+bootstrapping!!
+bootstrapping!!
+bootstrapping!!
+bootstrapping!!
+bootstrapping!!
+bootstrapping!!
+bootstrapping!!
+bootstrapping!!
+bootstrapping!!
+bootstrapping!!
+bootstrapping!!
+bootstrapping!!
+bootstrapping!!
+bootstrapping!!
+bootstrapping!!
+bootstrapping!!
+bootstrapping!!
+bootstrapping!!
+bootstrapping!!
+bootstrapping!!
+bootstrapping!!
+bootstrapping!!
+bootstrapping!!
+bootstrapping!!
+bootstrapping!!
+bootstrapping!!
+bootstrapping!!
+bootstrapping!!
+bootstrapping!!
+bootstrapping!!
+bootstrapping!!
+bootstrapping!!
+bootstrapping!!
+bootstrapping!!
+bootstrapping!!
+bootstrapping!!
+bootstrapping!!
+bootstrapping!!
+bootstrapping!!
+bootstrapping!!
+bootstrapping!!
+bootstrapping!!
+bootstrapping!!
+bootstrapping!!
+bootstrapping!!
+bootstrapping!!
+bootstrapping!!
+bootstrapping!!
+bootstrapping!!
+bootstrapping!!
+bootstrapping!!
+bootstrapping!!
+bootstrapping!!
+bootstrapping!!
+bootstrapping!!
+bootstrapping!!
+bootstrapping!!
+bootstrapping!!
+bootstrapping!!
+bootstrapping!!
+bootstrapping!!
+bootstrapping!!
+bootstrapping!!
+bootstrapping!!
+bootstrapping!!
+bootstrapping!!
+bootstrapping!!
+bootstrapping!!
+bootstrapping!!
+bootstrapping!!
+bootstrapping!!
+bootstrapping!!
+bootstrapping!!
+bootstrapping!!
+bootstrapping!!
+bootstrapping!!
+bootstrapping!!
+bootstrapping!!
+bootstrapping!!
+OK phone match + existence  32x  32 ct  1048576 rows  mean   92.60s  std  0.01s  (warm-up  92.55s)  bs 868  cheb 1544  reps 30
+==== bench done 2026-10-06 09:40:34
+ 
+ ****************************************************************************** 
+ *                                                                            * 
+ *               STARTING cba72948-545f-3cab-9ee3-f6078a90bf4e                * 
+ *                                                                            * 
+ ****************************************************************************** 
+ executing: bash

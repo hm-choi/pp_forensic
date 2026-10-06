@@ -163,6 +163,10 @@ class HEEngine:
                 self._key_dir_path,
             )
 
+            # KeyPack reads keys lazily, so load them all before .to(GPU)
+            if self.is_gpu():
+                self._preload_keys()
+
             print("Key loaded")
 
         except Exception as exc:
@@ -190,6 +194,29 @@ class HEEngine:
             self._pk = keygen.keypack
 
             print("Key generation done")
+
+    def _preload_keys(self):
+        pk_dir = os.path.join(self._key_dir_path, "PK")
+
+        def load(fn, fname, *idx):
+            try:
+                fn(*idx)
+            except Exception:
+                fn(*idx, os.path.join(pk_dir, fname))
+
+        load(self._pk.load_enc_key, "EncKey.bin")
+        load(self._pk.load_mult_key, "MultKey.bin")
+        load(self._pk.load_conj_key, "ConjKey.bin")
+
+        rot = sorted(
+            int(f[len("RotKey"):-len(".bin")])
+            for f in os.listdir(pk_dir)
+            if f.startswith("RotKey") and f.endswith(".bin")
+        )
+        for i in rot:
+            load(self._pk.load_left_rot_key, f"RotKey{i}.bin", i)
+
+        print(f"Keys preloaded: enc, mult, conj, {len(rot)} rotation keys")
 
     def _init_operators(self):
         # Move objects to GPU only in GPU mode

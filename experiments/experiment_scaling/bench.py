@@ -50,7 +50,7 @@ LOG_FILE = open('results/bench_log.txt', 'a', encoding='utf-8')
 sys.stdout = Tee(sys.__stdout__, LOG_FILE)
 sys.stderr = Tee(sys.__stderr__, LOG_FILE)
 
-engine = HEEngine(device_type="cpu", log_slots=15, warmup_bootstrap=True)
+engine = HEEngine(device_type=os.environ.get("HE_DEVICE", "cpu"), log_slots=15, warmup_bootstrap=True)
 hft = HEForensicTest(engine)
 ho = HEOperator(engine)
 NS = engine.num_slots()
@@ -145,7 +145,9 @@ def run_edr():
 def run_phone():
     DEN = (999, 9999, 9999)
     MARGIN = 0.5
-    C = 16384      # tiling multiplies the match count (about 9,600 at 5x), so C is raised from 32
+    # Public bound on the match count. Tiling multiplies the matches (9,636 at 5x, 61,680 at 32x),
+    # so the bound must exceed the largest multiple: PHONE_C=65536 for runs up to 32x.
+    C = int(os.environ.get('PHONE_C', '16384'))
     d = pd.read_csv('../../datasets/niro_call.csv')
     base = pd.to_numeric(d['Peer_number'], errors='coerce').fillna(-1).astype('int64').to_numpy()
     target = int(pd.Series(base[base != -1]).value_counts().index[0])

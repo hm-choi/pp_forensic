@@ -39,7 +39,7 @@ sys.stderr = Tee(sys.__stderr__, LOG_FILE)
 #==========================#
 ##  1. Generate HEEngine  ##
 #==========================#
-engine = HEEngine(device_type="cpu",
+engine = HEEngine(device_type=os.environ.get("HE_DEVICE", "cpu"),
     log_slots=15,
     warmup_bootstrap=True)
 

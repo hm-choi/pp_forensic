@@ -42,7 +42,8 @@ class HEOperator:
 
             # Build a Message and move it to the device (GPU/CPU)
             msg = hn.Message(padded_arr)
-            # msg.to(self._engine.device())
+            if self._engine.is_gpu():
+                msg.to(self._engine.device())
 
             # Encrypt
             ct = hn.Ciphertext(self._engine.context())
@@ -337,6 +338,9 @@ class HEOperator:
 
         low_mask = hn.Message(np.array([1.0] * (num_slots - r) + [0.0] * r, dtype=np.float64))
         high_mask = hn.Message(np.array([0.0] * (num_slots - r) + [1.0] * r, dtype=np.float64))
+        if self._engine.is_gpu():
+            low_mask.to(self._engine.device())
+            high_mask.to(self._engine.device())
 
         result_ctxts = []
         for j in range(n):

@@ -89,7 +89,14 @@ The experiments run inside the vendor Docker image.
 | Machine | Google Colab, NVIDIA A100-SXM4-80GB | Intel Xeon Sapphire Rapids, 16 vCPU, 64 GB RAM |
 | Selected by | `HE_DEVICE=gpu` | `HE_DEVICE` unset or `cpu` (default) |
 
-Colab has no Docker daemon, so the GPU image is run with udocker. `colab/` holds the setup and run scripts; see `colab/README.md`.
+Colab has no Docker daemon, so the GPU image is run with udocker:
+
+```
+bash colab/setup_udocker.sh                          # once per runtime, ends with SANITY OK
+nohup bash colab/run_a100.sh > run_a100.out 2>&1 &   # all experiments, results to Google Drive
+```
+
+`run_a100.sh` runs Experiments 1 to 3 thirty times and Experiment 4 at 1, 2, 4, 8 and 32 ciphertexts, with `HE_DEVICE=gpu` and `PHONE_C=65536`, then aggregates the results. It took about 3 hours 10 minutes on the A100.
 
 ## Running
 

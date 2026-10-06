@@ -1,4 +1,7 @@
-"""Fit runtime vs. ciphertexts on the small multiples only, then check how well it predicts the big one."""
+"""Fit runtime vs. ciphertexts on the small multiples only, then check how well it predicts the big one.
+
+usage: python3 tools/scale_check.py <bench_times.csv> [big multiple, default 32]
+"""
 import sys
 import numpy as np, pandas as pd
 d = pd.read_csv(sys.argv[1]); big = int(sys.argv[2]) if len(sys.argv) > 2 else 32

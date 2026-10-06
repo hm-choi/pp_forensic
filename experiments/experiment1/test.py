@@ -39,6 +39,9 @@ sys.stderr = Tee(sys.__stderr__, LOG_FILE)
 #==========================#
 ##  1. Generate HEEngine  ##
 #==========================#
+# HE_DEVICE=gpu runs the same circuits on the GPU build (the paper's figures);
+# unset or cpu runs the CPU build. warmup_bootstrap keeps the slower first
+# bootstrap of the process out of the timed queries.
 engine = HEEngine(device_type=os.environ.get("HE_DEVICE", "cpu"),
     log_slots=15,
     warmup_bootstrap=True)

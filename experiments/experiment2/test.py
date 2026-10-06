@@ -38,6 +38,9 @@ sys.stderr = Tee(sys.__stderr__, LOG_FILE)
 #==========================#
 ##  1. Generate HEEngine  ##
 #==========================#
+# HE_DEVICE=gpu runs the same circuits on the GPU build (the paper's figures);
+# unset or cpu runs the CPU build. warmup_bootstrap keeps the slower first
+# bootstrap of the process out of the timed queries.
 engine = HEEngine(device_type=os.environ.get("HE_DEVICE", "cpu"),
     log_slots=15,
     warmup_bootstrap=True)
@@ -79,7 +82,7 @@ car_data = pd.read_csv('../../datasets/niro_call.csv')
 ##  3. Do Preprocessing  ##
 #=========================#
 # Numbers are stored as integers, so every value is zero-padded back to 11 digits.
-WIDTHS = (3, 4, 4)                           # 010 / 2013 / 2924
+WIDTHS = (3, 4, 4)                           # 010 / 5000 / 2924
 DENOMS = tuple(10 ** w - 1 for w in WIDTHS)  # 999 / 9999 / 9999
 NDIGIT = sum(WIDTHS)
 UNOBSERVED_PREFIX = 999                      # a prefix no real number uses

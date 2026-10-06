@@ -3,6 +3,10 @@
 #   Exp 1-3 : N fresh processes (default 30)
 #   Exp 4   : one process per batch, warm-up then REPS back-to-back (same protocol as CPU)
 # env: N=30 REPS=30 REPS32=30 MULTIPLES=1,2,4,8 BIG=32 PHONE_C=65536 D=<drive dir>
+# usage (Colab, after colab/setup_udocker.sh and mounting Drive):
+#   cd /content/pp_forensic && nohup bash colab/run_a100.sh > /content/drive/MyDrive/run_a100.out 2>&1 &
+# outputs in $D: runs/run_XX (Exp 1-3), exp4/ (bench times, summary, scale_check.txt),
+#   aggregated/, paper_numbers.txt, logs/ (per-run logs, main.log, gpu_monitor.csv in UTC)
 R=/content/pp_forensic
 D=${D:-/content/drive/MyDrive/pp_forensic_a100}
 N=${N:-30}; REPS=${REPS:-30}; REPS32=${REPS32:-$REPS}

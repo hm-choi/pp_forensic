@@ -19,7 +19,7 @@ class HEEngine:
         log_slots=15,
         setting_root="/root/heaan_setting/",
         separate_keys_by_slots=False,
-        warmup_bootstrap=False,  # False is recommended on CPU
+        warmup_bootstrap=False,  # True runs one bootstrap at start-up so the slower first call is not timed
     ):
         self._params = params
         self._device_type = device_type.lower()

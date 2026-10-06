@@ -1,4 +1,7 @@
-"""Collect every number the paper's Section 5 needs from the GPU runs (runs/run_*)."""
+"""Collect every number Section 6 of the paper needs (Experiments 1 to 3) from the GPU runs.
+
+usage: python3 tools/extract_gpu.py <dir holding run_01 ... run_30>
+"""
 import glob, sys
 import numpy as np, pandas as pd
 R = sys.argv[1] if len(sys.argv) > 1 else '/pp_forensic_do/runs'

@@ -1,4 +1,4 @@
-"""Runtime of each predicate when the input spans 1-5 ciphertexts.
+"""Runtime of each predicate when the input spans several ciphertexts (Experiment 4).
 
 Only runtime is the target. For every predicate and every multiple, the input
 is encrypted once, the circuit is evaluated once as a warm-up (and that one
@@ -7,11 +7,18 @@ is timed REPS times in this process. The logs are tiled cyclically up to
 multiple x 32,768 rows; HE time depends on the number of ciphertexts, not on
 the values, so a tiled log costs what a genuinely longer log would.
 
+The paper's figures use MULTIPLES=1,2,4,8,32 on the GPU (32 ciphertexts hold
+1,048,576 rows). colab/run_a100.sh runs 1,2,4,8 and 32 as two processes; each
+process warms up once and times every point back to back, as on the CPU.
+
 Environment:
+  HE_DEVICE  gpu or cpu, default cpu
   PREDS      which predicates, default "geo,edr,phone"
-  MULTIPLES  default "1,2,3,4,5"
+  MULTIPLES  default "1,2,4,8,32" (the earlier CPU run used "1,2,3,4,5")
   REPS       timed repetitions per point, default 30
   REPS_phone (etc.)  per-predicate override of REPS
+  PHONE_C    public bound C of the existence circuit, default 65536; it must
+             exceed the match count of the tiled log (61,680 at 32x)
 """
 import os
 import sys
@@ -26,7 +33,7 @@ from operators import bscount
 from tm import to_tm
 
 PREDS = os.environ.get('PREDS', 'geo,edr,phone').split(',')
-MULTIPLES = [int(m) for m in os.environ.get('MULTIPLES', '1,2,3,4,5').split(',')]
+MULTIPLES = [int(m) for m in os.environ.get('MULTIPLES', '1,2,4,8,32').split(',')]
 REPS = int(os.environ.get('REPS', '30'))
 OUT = 'results/bench_times.csv'
 
@@ -146,8 +153,8 @@ def run_phone():
     DEN = (999, 9999, 9999)
     MARGIN = 0.5
     # Public bound on the match count. Tiling multiplies the matches (9,636 at 5x, 61,680 at 32x),
-    # so the bound must exceed the largest multiple: PHONE_C=65536 for runs up to 32x.
-    C = int(os.environ.get('PHONE_C', '16384'))
+    # so the bound must exceed the count at the largest multiple; 65536 covers runs up to 32x.
+    C = int(os.environ.get('PHONE_C', '65536'))
     d = pd.read_csv('../../datasets/niro_call.csv')
     base = pd.to_numeric(d['Peer_number'], errors='coerce').fillna(-1).astype('int64').to_numpy()
     target = int(pd.Series(base[base != -1]).value_counts().index[0])

@@ -74,15 +74,19 @@ sweep still excludes part of the log.
 
 ### Cost
 
-Mean of 30 runs.
+Mean of 30 runs. GPU: NVIDIA A100-SXM4-80GB (figures in the paper). CPU: Intel Xeon Sapphire Rapids, 16 vCPU.
 
-| | Value |
-|---|---|
-| Explicit bootstraps per query | 4 |
-| Chebyshev evaluations per query | 8 |
-| Homomorphic time per query | 12.62 to 14.27 s |
-| Query parameter encryption | about 0.02 s |
-| Plaintext time per query | under 0.2 ms |
+| | GPU | CPU |
+|---|---|---|
+| Explicit bootstraps per query | 4 | 4 |
+| Chebyshev evaluations per query | 8 | 8 |
+| Homomorphic time per query | 0.44 to 0.46 s | 12.62 to 14.27 s |
+| Query parameter encryption | 0.04 to 0.05 s | about 0.02 s |
+| Plaintext time per query | under 0.2 ms | under 0.2 ms |
+
+On the GPU run, inside slots stay at 0.999999997 or above for every radius of 0.5 km
+and more. At 0.2 km, two records lying 10 m and 40 m inside the boundary decrypt to
+0.76 (K5 DL3) and 0.996 (K5 JF); both still round to the correct answer.
 
 The geofence is the cheapest of the six circuits in this work, because it reads
 one sign and therefore runs the step function once.
@@ -91,6 +95,7 @@ one sign and therefore runs the step function once.
 
 ```bash
 export PYTHONPATH=/pp_forensic
+export HE_DEVICE=gpu            # omit for the CPU build
 cd /pp_forensic/experiments/experiment1
 python3 -W ignore -u test.py
 ```

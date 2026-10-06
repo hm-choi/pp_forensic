@@ -93,16 +93,16 @@ rows 5 to 8.
 
 ### Cost
 
-Mean of 30 runs.
+Mean of 30 runs. GPU: NVIDIA A100-SXM4-80GB (figures in the paper). CPU: Intel Xeon Sapphire Rapids, 16 vCPU.
 
-| Predicate | Step calls | Bootstraps | Chebyshev | Homomorphic time | Plaintext time |
-|---|---|---|---|---|---|
-| Speed increase | 1 | 4 | 8 | 14.33 s | 0.35 ms |
-| Over-speed | 1 | 4 | 8 | 13.34 s | 0.18 ms |
-| Time window | 2 | 8 | 16 | 26.01 s | 0.29 ms |
+| Predicate | Step calls | Bootstraps | Chebyshev | GPU time | CPU time | Plaintext time |
+|---|---|---|---|---|---|---|
+| Speed increase | 1 | 4 | 8 | 0.45 s | 14.33 s | 0.35 ms |
+| Over-speed | 1 | 4 | 8 | 0.43 s | 13.34 s | 0.18 ms |
+| Time window | 2 | 8 | 16 | 0.88 s | 26.01 s | 0.29 ms |
 
-Query parameter encryption takes about 0.07 s for all three parameters
-together.
+Query parameter encryption takes about 0.13 s on the GPU (about 0.07 s on the
+CPU) for all three parameters together.
 
 The time window costs roughly twice what the other two predicates cost, because
 it calls `he_step` once per bound and multiplies the two results. Its bootstrap
@@ -113,6 +113,7 @@ number of comparisons it contains, not the kind of quantity being compared.
 
 ```bash
 export PYTHONPATH=/pp_forensic
+export HE_DEVICE=gpu            # omit for the CPU build
 cd /pp_forensic/experiments/experiment3
 python3 -W ignore -u test.py
 ```

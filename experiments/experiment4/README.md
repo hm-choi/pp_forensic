@@ -13,7 +13,7 @@ Show that the size of the data is not bounded by the 32,768 slots of a single ci
 | Radius | K5 DL3 (2020), as in Experiment 1 | center 37.31808, 127.12741, radius 1 km |
 | Speed threshold | Avante CN7 (2021) EDR, as in Experiment 3 | 60 km/h |
 | Time window | Avante CN7 (2021) EDR, as in Experiment 3 | -3,000 to -1,000 ms |
-| Phone-number match | Niro (2018), as in Experiment 2 | 010-5000-2924, match and existence circuit |
+| Phone-number match | Niro (2018), as in Experiment 2 | `010-$$$$-2924`, match and existence circuit |
 
 For each predicate and each number of ciphertexts, the input is encrypted once, the circuit is evaluated once as a warm-up and its decision is checked against plaintext on every row, and the same circuit is then timed 30 times. `colab/run_a100.sh` runs 1, 2, 4 and 8 ciphertexts in one process and 32 ciphertexts in a second process.
 

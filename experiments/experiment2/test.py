@@ -108,7 +108,7 @@ def bump(num, i):
 
 
 def grouped(num):
-    """Write a number as its digit groups, e.g. 010-5000-2924."""
+    """Write a number as its digit groups, e.g. 010-$$$$-2924."""
     out, pos = [], 0
     for w in WIDTHS:
         out.append(num[pos:pos + w])
@@ -116,7 +116,7 @@ def grouped(num):
     return '-'.join(out)
 
 
-raw = np.pad(car_data['Peer_number'].to_numpy(),
+raw = np.pad(car_data['Phone_number'].to_numpy(),
              (0, slot_count - len(car_data)), constant_values=-1)
 
 # Rows with no number (-1) get the prefix 999 so they never match any target.

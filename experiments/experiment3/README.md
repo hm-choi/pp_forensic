@@ -10,8 +10,8 @@ Answer yes-or-no questions about the speed of a vehicle before a crash. In a con
 
 `datasets/avante_accident.csv`: EDR report of the airbag control unit of a Hyundai Avante CN7 (2021).
 
-- The 11 rows with a speed are the pre-crash speed samples at 0.5 s intervals, from 42 km/h five seconds before T0 to 68 km/h at -0.5 s, followed by 5 km/h at T0. The remaining 5 rows carry no speed (-1).
-- The EDR has no absolute clock. `T_rel_ms` is the offset from T0, the EDR time zero, which lies 20 ms before the airbag deployment command logged in `telematics.log` (13:09:50.233). The 11 samples occupy consecutive slots in time order.
+- The 11 rows with a speed are the pre-crash speed samples at 0.5 s intervals, from 42 km/h five seconds before T0 to 68 km/h at -0.5 s, followed by 5 km/h at the EDR time zero. The remaining 5 rows carry no speed (-1).
+- The EDR has no absolute clock. T0 is the airbag deployment command logged in `telematics.log` (13:09:50.233). The EDR time zero lies 20 ms before it, so a sample at EDR offset τ has `T_rel_ms` = τ − 20, and the last sample sits at −20 ms. The 11 samples occupy consecutive slots in time order.
 - Speed (`Speed_kmh`) is divided by 200 and time (`T_rel_ms`) by 5,000.
 
 ## Predicates
@@ -42,6 +42,8 @@ All three predicates agreed with the plaintext decision on every scored slot in 
 | 8 | -1020 | 66 | 0.9999999991 | 0.9999999993 | 0.9999999986 |
 | 9 | -520 | 68 | 0.9999999999 | 0.9999999999 | -0.0000000006 |
 | 10 | -20 | 5 | 0.0000000004 | -0.0000000003 | 0.0000000004 |
+
+Slot 0 has no earlier sample. The cyclic rotation compares it with the last padded slot (speed 0), so its speed-increase value is not scored in the paper (Table 8 shows "–").
 
 The circumstances reconstructed from the three bits are consistent with the EDR report: the vehicle accelerated continuously from five seconds before T0, exceeded 60 km/h from 2.02 s before T0 onward, and the queried window isolates four rows (slots 5 to 8) of that acceleration segment.
 

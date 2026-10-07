@@ -156,7 +156,7 @@ def run_phone():
     # so the bound must exceed the count at the largest multiple; 65536 covers runs up to 32x.
     C = int(os.environ.get('PHONE_C', '65536'))
     d = pd.read_csv('../../datasets/niro_call.csv')
-    base = pd.to_numeric(d['Peer_number'], errors='coerce').fillna(-1).astype('int64').to_numpy()
+    base = pd.to_numeric(d['Phone_number'], errors='coerce').fillna(-1).astype('int64').to_numpy()
     target = int(pd.Series(base[base != -1]).value_counts().index[0])
     tseg = [target // 10**8, (target // 10**4) % 10**4, target % 10**4]
 

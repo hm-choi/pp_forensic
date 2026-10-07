@@ -37,7 +37,7 @@ All five predicates are built from the step function of Eq. (1), a composite pol
 | Predicate | Input column | Step calls | Btsp. | Function in `operators/forensic_operator.py` |
 | --- | --- | --- | --- | --- |
 | Radius, Eq. (3) | `Lat_x1e5`, `Lon_x1e5` | 1 | 4 | `compute_geofence_score` |
-| Phone-number match, Eq. (4) on three digit groups | `Peer_number` | 6 | 27 | `detect_phone_match` |
+| Phone-number match, Eq. (4) on three digit groups | `Phone_number` | 6 | 27 | `detect_phone_match` |
 | Existence circuit (one-bit response) | match decisions | 1 | 4 | `detect_phone_exists` |
 | Time window, Eq. (4) | `T_rel_ms` | 2 | 8 | `time_range` |
 | Speed increase, Eq. (1) on adjacent slots | `Speed_kmh` | 1 | 4 | `detect_speed_increase` |
@@ -67,7 +67,7 @@ Every input is divided by a public constant S so that it lies in [-1, 1].
 | `Lat_x1e5`, `Lon_x1e5` | Projected to EPSG:5186 meters, divided by the normalization width L = 884,592 m |
 | `Speed_kmh` | Divided by 200 |
 | `T_rel_ms` | Divided by 5,000, the maximum width of the time window |
-| `Peer_number` | Zero-padded to 11 digits, split into digit groups of 3, 4 and 4, divided by 999, 9,999 and 9,999 |
+| `Phone_number` | Zero-padded to 11 digits, split into digit groups of 3, 4 and 4, divided by 999, 9,999 and 9,999 |
 
 Unobserved fields are substituted before encryption with values fixed independently of any query: coordinates with a point more than 500 km from every recorded location, and phone numbers with the leading digit group 999, which no real number uses. Time and speed are left as they are.
 

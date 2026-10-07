@@ -8,9 +8,9 @@ Check whether a given phone number appears in the call records of Niro, without 
 
 ## Data
 
-`datasets/niro_call.csv`: Kia Niro (2018), Jellybean (Android 4.2.2) IVI, 204 records. The counterpart number (`Peer_number`) is taken from the `+CLCC`, `+CLIP` and `RepoCallersInfo` lines of `trace_log`. 19 records carry a number, and they reduce to 4 distinct numbers occurring 12, 3, 2 and 2 times. One begins with 006 rather than 01x. No record carries a complete coordinate pair.
+`datasets/niro_call.csv`: Kia Niro (2018), Jellybean (Android 4.2.2) IVI, 204 records. The counterpart number (`Phone_number`) is taken from the `+CLCC`, `+CLIP` and `RepoCallersInfo` lines of `trace_log`. 19 records carry a number, and they reduce to 4 distinct numbers occurring 12, 3, 2 and 2 times. One begins with 006 rather than 01x. No record carries a complete coordinate pair.
 
-The numbers were substituted after the experiments (middle digit group only, one to one), so the numbers below are not real numbers. The paper masks the middle group as `$$$$`.
+The numbers were substituted after the experiments (middle digit group only, one to one). As in the paper, the middle group is masked as `$$$$` below.
 
 ## Predicates
 
@@ -26,23 +26,23 @@ For all eleven queries, the per-slot match decisions agreed with the plaintext b
 
 | Queried number | Differing group | Matches (rows) | Existence value | Decision | Btsp. | Time (s) |
 | --- | --- | --- | --- | --- | --- | --- |
-| 010-5000-2924 | Original | 12 | 0.9999999998 | Present | 31 | 3.35 |
-| 010-5100-9080 | Original | 3 | 0.9999999997 | Present | 31 | 3.33 |
-| 010-5200-1582 | Original | 2 | 0.9999999995 | Present | 31 | 3.33 |
-| 006-5300-4858 | Original | 2 | 0.9999999996 | Present | 31 | 3.33 |
-| 010-5000-2925 | Last | 0 | -7.5e-10 | Absent | 31 | 3.32 |
-| 010-5100-9081 | Last | 0 | -5.0e-10 | Absent | 31 | 3.32 |
-| 010-5200-1583 | Last | 0 | -5.9e-10 | Absent | 31 | 3.33 |
-| 006-5300-4859 | Last | 0 | -5.4e-10 | Absent | 31 | 3.33 |
-| 010-5010-2924 | Middle | 0 | -4.4e-10 | Absent | 31 | 3.33 |
-| 020-5000-2924 | First | 0 | -5.9e-10 | Absent | 31 | 3.33 |
-| 010-1111-2222 | Unrelated | 0 | -4.6e-10 | Absent | 31 | 3.33 |
+| `010-$$$$-2924` | Original | 12 | 0.9999999998 | Present | 31 | 3.35 |
+| `010-$$$$-9080` | Original | 3 | 0.9999999997 | Present | 31 | 3.33 |
+| `010-$$$$-1582` | Original | 2 | 0.9999999995 | Present | 31 | 3.33 |
+| `006-$$$$-4858` | Original | 2 | 0.9999999996 | Present | 31 | 3.33 |
+| `010-$$$$-2925` | Last | 0 | -7.5e-10 | Absent | 31 | 3.32 |
+| `010-$$$$-9081` | Last | 0 | -5.0e-10 | Absent | 31 | 3.32 |
+| `010-$$$$-1583` | Last | 0 | -5.9e-10 | Absent | 31 | 3.33 |
+| `006-$$$$-4859` | Last | 0 | -5.4e-10 | Absent | 31 | 3.33 |
+| `010-$$$$-2924`† | Middle | 0 | -4.4e-10 | Absent | 31 | 3.33 |
+| `020-$$$$-2924` | First | 0 | -5.9e-10 | Absent | 31 | 3.33 |
+| `010-$$$$-2222` | Unrelated | 0 | -4.6e-10 | Absent | 31 | 3.33 |
 
-Table 7 of the paper shows eight of these rows; 010-5010-2924 is the row marked †.
+Table 7 of the paper shows eight of these rows. † Differs from the first row only inside the masked middle group.
 
 The time is the match (2.87 to 2.89 s) plus the existence circuit (0.46 s). The per-slot match decisions carry a larger error than the existence bit, reaching 0.99999960 in the worst case for matching rows and 1.3e-7 for non-matching rows, because three digit-group decisions are multiplied with bootstrapping in between.
 
-The decisions remain unchanged when C is set to 32, 256 and 2,048 (checked on 010-5000-2924 and 010-1111-2222 in every run), so the investigator may declare a bound two orders of magnitude above the actual number of matches.
+The decisions remain unchanged when C is set to 32, 256 and 2,048 (checked on `010-$$$$-2924` and `010-$$$$-2222` in every run), so the investigator may declare a bound two orders of magnitude above the actual number of matches.
 
 Encrypting the query parameters takes 0.26 to 0.28 s, since three interval pairs are encrypted.
 

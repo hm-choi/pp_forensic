@@ -75,7 +75,7 @@ Unobserved fields are substituted before encryption with values fixed independen
 
 | | |
 | --- | --- |
-| HE library | CryptoLab HEaaN SDK, GPU distribution, FGb parameter set (32,768 slots) |
+| HE library | CryptoLab HEaaN.Stat SDK, HEaaN.Stat-gpu v1.0.0, FGb parameter set (32,768 slots) |
 | Image | `cryptolabinc/heaan-stat:1.0.0-gpu` |
 | Machine | Google Colab instance, NVIDIA A100-SXM4 GPU with 80 GB of memory |
 | Python | 3.10, numpy, pandas |
@@ -97,7 +97,7 @@ cd <repo root>/experiments/experiment1
 python3 -W ignore -u test.py
 ```
 
-With `HE_DEVICE=gpu`, `HEEngine` creates the context on the GPU and moves the keys there. The same code runs on the CPU distribution of HEaaN when `HE_DEVICE` is not set.
+With `HE_DEVICE=gpu`, `HEEngine` creates the context on the GPU and moves the keys there. The same code runs on the CPU distribution of HEaaN.Stat when `HE_DEVICE` is not set.
 
 ## Results
 
@@ -133,6 +133,8 @@ The runtime grows linearly with the number of ciphertexts (R^2 >= 0.9999), addin
 
 ## Attribution
 
-`engine/`, `hedata/`, `operators/operator.py` and `operators/inv_sqrt.py` are adapted from the PP-STAT implementation, which also provides the Chebyshev coefficients of the step function. `operators/forensic_operator.py` and everything under `experiments/` are new to this work. The homomorphic encryption backend is the HEaaN SDK by CryptoLab.
+`engine/`, `hedata/`, `operators/operator.py` and `operators/inv_sqrt.py` are adapted from the PP-STAT implementation, which also provides the Chebyshev coefficients of the step function. `operators/forensic_operator.py` and everything under `experiments/` are new to this work. The homomorphic encryption backend is the HEaaN.Stat SDK by CryptoLab (HEaaN.Stat-gpu v1.0.0).
 
 > H. Choi, "PP-STAT: An Efficient Privacy-Preserving Statistical Analysis Framework Using Homomorphic Encryption," CIKM '25, pp. 448-457.
+
+> HEaaN.Stat SDK. HEaaN.Stat-gpu v1.0.0. Online: https://hub.docker.com/r/cryptolabinc/heaan-stat. CryptoLab, Accessed: October 5, 2026.

@@ -15,7 +15,7 @@ The numbers were substituted after the experiments (middle digit group only, one
 ## Predicates
 
 - **Phone-number match**, Eq. (4) on each digit group, `HEForensicTest.detect_phone_match`. Each number is zero-padded to 11 digits, split into digit groups of 3, 4 and 4, and divided by 999, 9,999 and 9,999. An interval of half-width 1/2 around the target accepts exactly one integer per group, and the three group decisions are multiplied. Six step calls, 27 Btsp. The interval bounds are encrypted by the investigator.
-- **Existence circuit** (Section 4.4), `HEForensicTest.detect_phone_exists`. The match decisions are summed over all slots, shifted by 0.5, divided by the declared bound C, and passed through Eq. (1) once. One step call, 4 Btsp. C is a public upper bound on the expected number of matches; C = 32 for the main table.
+- **Existence circuit** (Section 4.5), `HEForensicTest.detect_phone_exists`. The match decisions are summed over all slots, shifted by 0.5, divided by the declared bound C, and passed through Eq. (1) once. One step call, 4 Btsp. C is a public upper bound on the expected number of matches; C = 32 for the main table.
 - Rows without a number are substituted with the leading digit group 999, which no real number uses.
 
 The queries are the four numbers in the log, one variant of each with the last digit changed, two variants of the most frequent number with one digit changed in the first and in the middle group, and one unrelated number. A one-digit difference amounts to about 1e-3 in the first group and about 1e-4 in the two trailing groups, so the trailing groups are the harder case.

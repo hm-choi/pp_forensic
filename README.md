@@ -1,6 +1,6 @@
 # PP-Forensics
 
-Implementation and experiment results of *PP-Forensics: Privacy-Preserving Forensic Analytics Framework for Heterogeneous Vehicle Software Platforms* (ACM SAC 2027).
+Implementation and experiment results of *PP-Forensics: Encrypted Predicate Evaluation for Privacy-Preserving Vehicle Forensics* (ACM SAC 2027).
 
 An investigator asks a custodian, a third party that holds vehicle logs in plaintext, whether any record satisfies a forensic predicate. The custodian converts its records into a feature matrix, encrypts it under the investigator's public key, and evaluates the predicate over ciphertexts. The query parameters (a phone number, a center and a radius, a speed threshold, or the two ends of a time window) also arrive encrypted. The investigator decrypts a single bit, and the custodian learns neither the decision nor the query parameters.
 
@@ -58,7 +58,7 @@ Column names follow the paper. A value of -1 marks an unobserved field. Coordina
 
 The phone numbers, Bluetooth MAC address, IMEI, ICCID and the single location fix in `niro_call.csv` were substituted after the experiments. Each phone number keeps its first and last digit groups, and only the middle group is replaced, one to one, so every match count and every decision of Experiment 2 is unchanged.
 
-## Encoding (Section 5.4)
+## Encoding (Section 4.3)
 
 Every input is divided by a public constant S so that it lies in [-1, 1].
 

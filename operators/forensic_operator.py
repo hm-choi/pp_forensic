@@ -118,7 +118,7 @@ class HEForensicTest:
 
     def detect_phone_exists(self, match_ctxt, max_count=32):
         """
-        Existence circuit (Section 4.4): sums the match decisions over all slots
+        Existence circuit (Section 4.5): sums the match decisions over all slots
         and applies Eq. (1) once, so the response is a single bit.
         max_count is the public bound C on the number of matches.
         """

@@ -1,4 +1,4 @@
-# Experiment 4: Scalability
+# Performance Evaluation
 
 Section 6.5 and Table 9 of the paper.
 
@@ -48,7 +48,7 @@ For phone-number matching, the existence circuit runs once on the sum over all c
 
 ```
 export PYTHONPATH=<repo root> HE_DEVICE=gpu
-cd <repo root>/experiments/experiment4
+cd <repo root>/experiments/performance_evaluation
 python3 -W ignore -u bench.py > bench.log 2>&1
 python3 bench_summary.py
 ```
@@ -57,7 +57,7 @@ python3 bench_summary.py
 
 ## Output
 
-Written to `results/` next to the script. The A100 results are in `results/experiment4/` of the repository root.
+Written to `results/` next to the script. The A100 results are in `results/performance_evaluation/` of the repository root.
 
 | File | Contents |
 | --- | --- |

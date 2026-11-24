@@ -1,4 +1,4 @@
-"""Runtime of each predicate when the input spans several ciphertexts (Experiment 4).
+"""Runtime of each predicate when the input spans several ciphertexts (performance evaluation, Section 6.5).
 
 Only runtime is the target. For every predicate and every multiple, the input
 is encrypted once, the circuit is evaluated once as a warm-up (and that one

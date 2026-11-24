@@ -129,3 +129,16 @@ class HEForensicTest:
         score = ho.mult_const(score, 1.0 / max_count)
         score = ho.do_bootstrapping(score, 8)
         return hs.he_step(score)
+
+    def rerandomize(self, result, delta=0.2, rng=None):
+        """
+        Re-randomization of the response (Section 4.5). Adds, under EncKey, a vector that
+        repeats one value eta ~ U[-delta, delta] in every slot, so averaging over slots does
+        not remove it. Costs no level. delta = 0.2 keeps every decision of Section 6
+        (lowest Output read as 1: 0.765, highest read as 0: 1.3e-7); see
+        tools/rerandomize_check.py and results/rerandomize_check.txt.
+        """
+        rng = rng or np.random.default_rng()
+        eta = rng.uniform(-delta, delta)
+        noise = self.encrypt_param(eta)          # same value in every slot
+        return self.__ho.add(result, noise)

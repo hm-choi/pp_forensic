@@ -1,0 +1,6 @@
+# host: Intel Xeon Processor (SapphireRapids), 16 vCPU | 2026-11-24 15:25 KST
+17580 recorded outputs | lowest read as 1: 0.7649887983 | highest read as 0: 1.300e-07
+worst-case margin to 0.5: 0.2650  (delta = 0.2)
+decision flips after flooding: 0 over 17580 values x 20 draws
+flooding step (encrypt noise + add) on CPU: 0.029 s per ciphertext
+OK

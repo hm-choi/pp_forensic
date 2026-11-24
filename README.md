@@ -2,6 +2,8 @@
 
 Implementation and experiment results of *PP-Forensics: Encrypted Predicate Evaluation for Privacy-Preserving Vehicle Forensics* (ACM SAC 2027).
 
+DoHyeon Kim\*, SangWoo Ha\*, Heesu Choi, Hyunmin Choi†, Seong-je Cho† (\* equal contribution, † corresponding authors)
+
 An investigator asks a custodian, a third party that holds vehicle logs in plaintext, whether any record satisfies a forensic predicate. The custodian converts its records into a feature matrix, encrypts it under the investigator's public key, and evaluates the predicate over ciphertexts. The query parameters (a phone number, a center and a radius, a speed threshold, or the two ends of a time window) also arrive encrypted. The investigator decrypts a single bit, and the custodian learns neither the decision nor the query parameters.
 
 ## Layout
@@ -12,7 +14,7 @@ hedata/        Container for one or more CKKS ciphertexts
 operators/     Homomorphic operators, step function, forensic predicates,
                bootstrapping counter
 datasets/      Feature matrices of the four vehicles
-experiments/   experiment1 to experiment4, one folder per experiment
+experiments/   experiment1 to experiment3 and performance_evaluation
 colab/         Scripts that ran all experiments on the A100
 tools/         Post-processing of the A100 runs
 results/       A100 results reported in the paper
@@ -26,7 +28,7 @@ aggregate.py   Aggregates the 30 runs of Experiments 1 to 3
 | `experiment1` | 6.2 Experiment 1: Location History (Table 6) | Radius | K5 JF (2017), K5 DL3 (2020) |
 | `experiment2` | 6.3 Experiment 2: Call History (Table 7) | Phone-number match, existence circuit | Niro (2018) |
 | `experiment3` | 6.4 Experiment 3: Speeding and Acceleration (Table 8) | Speed increase, speed threshold, time window | Avante CN7 (2021), EDR |
-| `experiment4` | 6.5 Experiment 4: Scalability (Table 9) | Radius, speed threshold, time window, phone-number match | Data of Experiments 1 to 3, tiled to 1 to 32 ciphertexts |
+| `performance_evaluation` | 6.5 Performance Evaluation (Table 9) | Radius, speed threshold, time window, phone-number match | Data of Experiments 1 to 3, tiled to 1 to 32 ciphertexts |
 
 Each folder has its own README with the setting and the results.
 
@@ -42,6 +44,7 @@ All five predicates are built from the step function of Eq. (1), a composite pol
 | Time window, Eq. (4) | `T_rel_ms` | 2 | 8 | `time_range` |
 | Speed increase, Eq. (1) on adjacent slots | `Speed_kmh` | 1 | 4 | `detect_speed_increase` |
 | Speed threshold, Eq. (1) | `Speed_kmh` | 1 | 4 | `detect_overspeed` |
+| Re-randomization of the response (Section 4.5) | response ciphertext | 0 | 0 | `rerandomize` |
 
 The cost of a query is set by the number of step calls: about 0.11 s per bootstrapping operation on the A100.
 
@@ -87,7 +90,7 @@ bash colab/setup_udocker.sh                          # once per runtime, ends wi
 nohup bash colab/run_a100.sh > run_a100.out 2>&1 &   # all experiments, results to Google Drive
 ```
 
-`run_a100.sh` runs Experiments 1 to 3 in 30 separate processes and Experiment 4 at 1, 2, 4, 8 and 32 ciphertexts with 30 timed runs per point, then aggregates the results. The whole run took about 3 hours 10 minutes, and the folder it writes is what `results/` holds.
+`run_a100.sh` runs Experiments 1 to 3 in 30 separate processes and the performance evaluation at 1, 2, 4, 8 and 32 ciphertexts with 30 timed runs per point, then aggregates the results. The whole run took about 3 hours 10 minutes, and the folder it writes is what `results/` holds.
 
 To run a single experiment inside the container:
 
@@ -109,7 +112,7 @@ All runtimes are means over 30 runs on the A100. Every query agreed with the pla
 | 2: phone-number match and existence circuit | 11 | 31 | 3.32 to 3.35 | 0.26 to 0.28 |
 | 3: speed increase, speed threshold, time window | 3 | 4, 4, 8 | 0.45, 0.43, 0.88 | 0.13 |
 
-Experiment 4, time (s) by the number of ciphertexts with Btsp. in parentheses (Table 9):
+Performance evaluation, time (s) by the number of ciphertexts with Btsp. in parentheses (Table 9):
 
 | Ciphertexts | Rows | Radius | Speed threshold | Time window | Phone-number match |
 | --- | --- | --- | --- | --- | --- |
@@ -121,6 +124,28 @@ Experiment 4, time (s) by the number of ciphertexts with Btsp. in parentheses (T
 
 The runtime grows linearly with the number of ciphertexts (R^2 >= 0.9999), adding about 0.44 s per ciphertext for each step call.
 
+Against the plaintext baseline, which evaluates the same conditions in 0.14 to 0.44 ms per query (Section 6.5):
+
+| Query | HE (s) | Plaintext (ms) | Ratio |
+| --- | --- | --- | --- |
+| Radius (K5 JF / K5 DL3) | 0.44 / 0.44 | 0.19 / 0.18 | ~2,300x / ~2,400x |
+| Phone-number match and existence circuit | 3.33 | 0.15 | ~22,000x |
+| Speed threshold | 0.43 | 0.15 | ~2,800x |
+| Speed increase | 0.45 | 0.44 | ~1,000x |
+| Time window | 0.88 | 0.14 | ~6,400x |
+
+## Re-randomization of the response (Section 4.5)
+
+Before returning the result ciphertext, the custodian adds, under EncKey, a vector that repeats one value eta ~ U[-0.2, 0.2] in every slot (`HEForensicTest.rerandomize`). The same value in every slot cannot be removed by averaging over slots, and the step costs one fresh encryption and one addition, no level. `tools/rerandomize_check.py` takes all 17,580 decrypted Outputs recorded in `results/runs`, re-encrypts them, applies the step 20 times with fresh noise, and checks every decision (value > 0.5). It needs no GPU:
+
+```
+docker run --rm -v "$PWD":/w -w /w -e PYTHONPATH=/w \
+  --entrypoint python3 cryptolabinc/heaan-stat:latest tools/rerandomize_check.py
+python3 tools/rerandomize_check.py --dry   # same check in NumPy, without HE
+```
+
+Result (`results/rerandomize_check.txt`, HEaaN.Stat CPU, Intel Xeon Sapphire Rapids, 16 vCPU): the lowest Output read as 1 is 0.765 and the highest read as 0 is 1.3e-7, so no decision changes over 17,580 values x 20 draws; the flooding step takes 0.029 s per ciphertext.
+
 ### Result files
 
 | Path | Contents |
@@ -128,7 +153,8 @@ The runtime grows linearly with the number of ciphertexts (R^2 >= 0.9999), addin
 | `results/runs/run_01` to `run_30` | Output of Experiments 1 to 3 for each of the 30 runs |
 | `results/aggregated/` | `aggregate.py` over the 30 runs: mean times and worst-case decision values |
 | `results/paper_numbers.txt` | The numbers of Tables 6 to 8 and Section 6, from `tools/extract_gpu.py` |
-| `results/experiment4/` | Every timed run of Experiment 4, its summary and the linear fit (Table 9) |
+| `results/performance_evaluation/` | Every timed run of the performance evaluation, its summary and the linear fit (Table 9) |
+| `results/rerandomize_check.txt` | Output of `tools/rerandomize_check.py` (Section 4.5) |
 | `results/logs/` | Console log of each run, `main.log`, and `gpu_monitor.csv` (GPU clock and throttle reasons every 10 s, timestamps in UTC) |
 
 ## Attribution
